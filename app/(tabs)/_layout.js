@@ -23,6 +23,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="listing"
+        options={{
+          title: "Frases",
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>✨</Text>,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Perfil",
@@ -31,4 +38,5 @@ export default function TabsLayout() {
       />
     </Tabs>
   );
+
 }
