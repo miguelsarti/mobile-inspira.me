@@ -1,178 +1,165 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
+  ScrollView,
+  Image,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../contexts/AuthContext";
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
-
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Erro", "Preencha todos os campos");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const result = await signIn(email, password);
-
-      if (!result.success) {
-        Alert.alert("Erro", result.message || "Falha ao fazer login");
-      }
-    } catch (error) {
-      Alert.alert("Erro", "Falha ao fazer login");
-    } finally {
-      setLoading(false);
-    }
-  };
+export default function ProfileScreen() {
+  const { user } = useAuth();
+  const router = useRouter();
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={styles.content}>
-        <Text style={styles.emoji}>🔐</Text>
-        <Text style={styles.title}>Bem-vindo!</Text>
-        <Text style={styles.subtitle}>Faça login para continuar</Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Botão Editar Perfil */}
+      <TouchableOpacity style={styles.editProfile}>
+        <Text style={styles.editProfileText}>Editar Perfil</Text>
+      </TouchableOpacity>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-          editable={!loading}
+      {/* Avatar */}
+      <View style={styles.avatarWrapper}>
+        <Image
+          source={{ uri: "https://i.imgur.com/9YQZQZp.png" }}
+          style={styles.avatar}
         />
+      </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Senha"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          editable={!loading}
-        />
+      {/* Saudação */}
+      <Text style={styles.greeting}>Olá, {user?.name || "Sarah"}</Text>
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Entrar</Text>
-          )}
+      {/* Botões de ação */}
+      <View style={styles.actions}>
+        <TouchableOpacity style={[styles.actionButton, styles.active]}>
+          <Ionicons name="document-text-outline" size={20} color="#000" />
         </TouchableOpacity>
 
-        <View style={styles.registerContainer}>
-          <Text style={styles.registerText}>Não tem conta? </Text>
-          <Link href="/(auth)/register" asChild>
-            <TouchableOpacity disabled={loading}>
-              <Text style={styles.registerLink}>Cadastre-se</Text>
-            </TouchableOpacity>
-          </Link>
-        </View>
-
-        <Text style={styles.infoText}>
-          💡 Dica: Se não tiver conta, crie uma nova!
-        </Text>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => router.push("/favoritos")}
+        >
+          <Ionicons name="heart-outline" size={20} color="#000" />
+        </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+
+      {/* Frases criadas */}
+      <Text style={styles.sectionTitle}>Frases criadas:</Text>
+
+      {[1, 2, 3].map((item) => (
+        <View key={item} style={styles.quoteCard}>
+          <Text style={styles.quoteText}>
+            “Aquele que tem uma razão para viver pode quase tudo"
+          </Text>
+          <View style={styles.divider} />
+          <Text style={styles.author}>Friedrich Nietzsche</Text>
+          <TouchableOpacity style={styles.editQuote}>
+            <Ionicons name="pencil" size={16} color="#555" />
+          </TouchableOpacity>
+        </View>
+      ))}
+
+      {/* Botão ver mais */}
+      <TouchableOpacity style={styles.seeMore}>
+        <Text style={styles.seeMoreText}>Ver mais</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#fff",
   },
   content: {
-    flex: 1,
-    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
-  emoji: {
-    fontSize: 60,
-    textAlign: "center",
-    marginBottom: 20,
+  editProfile: {
+    alignSelf: "flex-end",
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
-    textAlign: "center",
+  editProfileText: {
+    color: "#2979FF",
+    fontSize: 14,
   },
-  subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 40,
-    textAlign: "center",
-  },
-  input: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  button: {
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    padding: 15,
-    alignItems: "center",
+  avatarWrapper: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    overflow: "hidden",
     marginTop: 10,
-    minHeight: 50,
-    justifyContent: "center",
   },
-  buttonDisabled: {
-    opacity: 0.6,
+  avatar: {
+    width: "100%",
+    height: "100%",
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+  greeting: {
+    marginTop: 10,
+    fontSize: 18,
+    color: "#2979FF",
+    fontWeight: "500",
   },
-  registerContainer: {
+  actions: {
     flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 20,
-    alignItems: "center",
+    backgroundColor: "#E0E0E0",
+    borderRadius: 30,
+    marginTop: 15,
   },
-  registerText: {
-    color: "#666",
-    fontSize: 14,
+  actionButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 30,
   },
-  registerLink: {
-    color: "#007AFF",
-    fontSize: 14,
+  active: {
+    backgroundColor: "#8BB8E8",
+  },
+  sectionTitle: {
+    marginTop: 25,
     fontWeight: "bold",
-  },
-  infoText: {
-    marginTop: 30,
-    textAlign: "center",
-    color: "#888",
     fontSize: 14,
-    paddingHorizontal: 20,
+  },
+  quoteCard: {
+    width: "100%",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 15,
+    padding: 15,
+    marginTop: 15,
+    position: "relative",
+  },
+  quoteText: {
+    fontSize: 13,
+    textAlign: "center",
+    color: "#333",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#ccc",
+    marginVertical: 10,
+  },
+  author: {
+    fontStyle: "italic",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  editQuote: {
+    position: "absolute",
+    right: 15,
+    bottom: 15,
+  },
+  seeMore: {
+    marginTop: 20,
+    backgroundColor: "#DCE8F7",
+    paddingHorizontal: 25,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  seeMoreText: {
+    color: "#333",
+    fontWeight: "500",
   },
 });
