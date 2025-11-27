@@ -1,142 +1,228 @@
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react'; 
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons'; // Importando o Ionicons para o ícone de menu
 
-// Dados mockados para exemplo inicial
-const mockPhrases = [
-  {
-    id: '1',
-    text: 'A jornada de mil milhas começa com um único passo.',
-    author: 'Lao Tzu',
-    likes: 156
-  },
-  {
-    id: '2',
-    text: 'Seja a mudança que você quer ver no mundo.',
-    author: 'Mahatma Gandhi',
-    likes: 243
-  },
-  {
-    id: '3',
-    text: 'Acredite que você pode e você está no meio do caminho.',
-    author: 'Theodore Roosevelt',
-    likes: 189
-  },
-  {
-    id: '4',
-    text: 'O sucesso é a soma de pequenos esforços repetidos dia após dia.',
-    author: 'Robert Collier',
-    likes: 127
-  },
-  {
-    id: '5',
-    text: 'Sua única limitação é você mesmo.',
-    author: 'Anonymous',
-    likes: 198
-  }
-];
-
-export default function ListingScreen() {
+export default function CreatePhraseScreen() {
   const router = useRouter();
+  const [phrase, setPhrase] = React.useState('');
+  const [author, setAuthor] = React.useState('');
+  const [category, setCategory] = React.useState('');
+  const [background, setBackground] = React.useState('#f0f0f0'); // Alterado para um cinza claro
+  const user = {
+    name: 'Anna', // Substitua com dados reais de usuário
+    photoURL: 'https://via.placeholder.com/40', // Substitua com dados reais de foto
+  };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.phraseCard}
-      onPress={() => {
-        router.push(`/tabs/${item.id}`);
-      }}
-    >
-      <View style={styles.userInfo}>
-        <Text style={styles.avatar}>{item.avatar}</Text>
-        <Text style={styles.userName}>{item.name}</Text>
-      </View>
-      <Text style={styles.phraseText}>"{item.text}"</Text>
-      <View style={styles.authorContainer}>
-        <Text style={styles.authorText}>- {item.author}</Text>
-        <Text style={styles.likesText}>❤️ {item.likes}</Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const handlePostPhrase = () => {
+    console.log('Postando frase:', phrase);
+    console.log('Autor:', author);
+    console.log('Categoria:', category);
+    console.log('Fundo:', background);
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>inspira.me</Text>
-      <FlatList
-        data={mockPhrases}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
+    <ScrollView contentContainerStyle={styles.container}>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <View style={styles.userAvatar}>
+            <Image
+              source={{ uri: user?.photoURL || "https://via.placeholder.com/40" }}
+              style={styles.avatarImage}
+            />
+          </View>
+          <Text style={styles.greeting}>Good Morning, {user?.name || "User"}</Text>
+        </View>
+
+        <TouchableOpacity style={styles.menuButton}>
+          <Ionicons name="menu" size={32} color="#6B8EAE" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Input de Frase e Autor */}
+      <TextInput
+        style={styles.input}
+        placeholder="Digite sua frase inspiradora aqui..."
+        value={phrase}
+        onChangeText={setPhrase}
       />
-    </View>
+      
+      <TextInput
+        style={styles.input}
+        placeholder="Autor(a)"
+        value={author}
+        onChangeText={setAuthor}
+      />
+      
+      <Text style={styles.label}>Fundo do card</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel}>
+        <TouchableOpacity
+          style={[styles.colorOption, { backgroundColor: background }]}
+          onPress={() => setBackground('#f0f0f0')}  // Alterado para cinza claro
+        />
+        <TouchableOpacity
+          style={[styles.colorOption, { backgroundColor: '#A6C8E0' }]}
+          onPress={() => setBackground('#A6C8E0')}
+        />
+        <TouchableOpacity
+          style={[styles.colorOption, { backgroundColor: '#8BB9D4' }]}
+          onPress={() => setBackground('#8BB9D4')}
+        />
+        <TouchableOpacity
+          style={[styles.colorOption, { backgroundColor: '#5D8AA8' }]}
+          onPress={() => setBackground('#5D8AA8')}
+        />
+      </ScrollView>
+
+      <Text style={styles.label}>Categorias</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel}>
+        <TouchableOpacity
+          style={[
+            styles.categoryButton,
+            category === 'AMOR' && styles.selectedCategory
+          ]}
+          onPress={() => setCategory('AMOR')}
+        >
+          <Text style={styles.categoryText}>AMOR</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.categoryButton,
+            category === 'FAMÍLIA' && styles.selectedCategory
+          ]}
+          onPress={() => setCategory('FAMÍLIA')}
+        >
+          <Text style={styles.categoryText}>FAMÍLIA</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.categoryButton,
+            category === 'AMIZADE' && styles.selectedCategory
+          ]}
+          onPress={() => setCategory('AMIZADE')}
+        >
+          <Text style={styles.categoryText}>AMIZADE</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={[styles.postButton, { backgroundColor: '#3498db' }]} onPress={handlePostPhrase}>
+          <Text style={styles.buttonText}>Postar Frase</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.postButton, { backgroundColor: '#ccc' }] }
+          onPress={() => router.back()}
+        >
+          <Text style={styles.buttonText}>Cancelar</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 20, // Aumentado o padding para maior espaçamento
     backgroundColor: '#fff',
-    paddingTop: 20
   },
+  // Estilos para o HEADER
   header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#333'
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 40, // Aumentado o espaçamento inferior
   },
-  listContainer: {
-    padding: 16
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  phraseCard: {
-    backgroundColor: '#f8f9fa',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
+  userAvatar: {
+    width: 60, // Aumentado o tamanho do avatar
+    height: 60, // Aumentado o tamanho do avatar
+    borderRadius: 30, // Aumentando a borda para manter o arredondado
+    backgroundColor: "#DCE6F2",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
+  },
+  avatarImage: {
+    width: 60, // Aumentando o tamanho da imagem do avatar
+    height: 60, // Aumentando o tamanho da imagem do avatar
+    borderRadius: 30,
+  },
+  greeting: {
+    fontSize: 22, // Aumentando o tamanho da saudação
+    fontWeight: "600", // Deixando o texto mais grosso
+    color: "#6B8EAE",
+  },
+  menuButton: {
+    padding: 8, // Aumentando o padding do botão de menu
+  },
+  // Estilos para os inputs
+  input: {
+    height: 60, // Aumentando a altura do campo de entrada
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 12, // Tornando o campo de entrada mais arredondado
+    marginBottom: 20, // Aumentando o espaçamento
+    paddingLeft: 20, // Aumentando o espaçamento interno
+    fontSize: 18, // Aumentando o tamanho da fonte
+  },
+  label: {
+    fontSize: 18, // Aumentando o tamanho da fonte do rótulo
+    fontWeight: '600', // Deixando mais forte
+    color: '#333',
+    marginBottom: 12, // Aumentando o espaçamento
+  },
+  carousel: {
+    marginBottom: 40, // Aumentando o espaçamento entre os elementos
+  },
+  colorOption: {
+    width: 80, // Aumentando o tamanho dos botões de cor
+    height: 80, // Aumentando o tamanho dos botões de cor
+    borderRadius: 16,
+    marginRight: 20, // Aumentando o espaçamento entre as opções
+  },
+  // Estilos para os botões de categoria
+  categoryButton: {
+    backgroundColor: '#f0f0f0',
+    height: 50, // Aumentando a altura dos botões de categoria
+    paddingVertical: 10,  // Deixando o botão mais "gordinho"
+    paddingHorizontal: 28,  // Aumentando o tamanho do botão
+    borderRadius: 30,  // Tornando o botão mais arredondado
+    marginRight: 25, // Ajustando o espaçamento
+    elevation: 5,  // Sombra para dar o efeito de profundidade
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
   },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+  selectedCategory: {
+    backgroundColor: '#A6C8E0',
   },
-  avatar: {
-    fontSize: 24,
-    marginRight: 8,
-  },
-  userName: {
-    fontSize: 14,
-    fontWeight: '500',
+  categoryText: {
+    fontSize: 18, // Aumentando o tamanho da fonte das categorias
+    fontWeight: '400', // Tornando o texto mais grosso
     color: '#333',
   },
-  phraseText: {
-    fontSize: 18,
-    color: '#2c3e50',
-    marginBottom: 8,
-    lineHeight: 24
-  },
-  authorContainer: {
+  buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 40, // Aumentando o espaçamento entre os botões
+  },
+  postButton: {
+    paddingVertical: 14, // Aumentando o tamanho do botão
+    paddingHorizontal: 40, // Aumentando o tamanho do botão
+    borderRadius: 10, // Tornando o botão mais arredondado
+    flex: 1,
     alignItems: 'center',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#eee'
+    marginRight: 20, // Adicionado espaçamento entre os botões
   },
-  authorText: {
-    fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic'
+  buttonText: {
+    fontSize: 13, // Aumentando o tamanho da fonte do botão
+    color: '#fff',
+    fontWeight: '600',
   },
-  likesText: {
-    fontSize: 14,
-    color: '#e74c3c'
-  }
 });
