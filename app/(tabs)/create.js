@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons'; // Importando o Ionicons para o ícone de menu
+import Header from '../components/header/header.js'
 
 export default function CreatePhraseScreen() {
   const router = useRouter();
@@ -24,21 +25,7 @@ export default function CreatePhraseScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.userAvatar}>
-            <Image
-              source={{ uri: user?.photoURL || "https://via.placeholder.com/40" }}
-              style={styles.avatarImage}
-            />
-          </View>
-          <Text style={styles.greeting}>Good Morning, {user?.name || "User"}</Text>
-        </View>
-
-        <TouchableOpacity style={styles.menuButton}>
-          <Ionicons name="menu" size={32} color="#6B8EAE" />
-        </TouchableOpacity>
-      </View>
+      <Header/>
 
       {/* Input de Frase e Autor */}
       <TextInput

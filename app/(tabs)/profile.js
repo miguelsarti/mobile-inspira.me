@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../contexts/AuthContext";
 import { useRouter } from "expo-router";
+import Header from '../components/header/header.js'
 
 export default function ProfileScreen() {
   const { user } = useAuth();
@@ -18,6 +19,9 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Botão Editar Perfil */}
+
+      <Header />
+
       <TouchableOpacity style={styles.editProfile}>
         <Text style={styles.editProfileText}>Editar Perfil</Text>
       </TouchableOpacity>
