@@ -1,142 +1,132 @@
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import Header from "../components/header/header.js";
 
-// Dados mockados para exemplo inicial
-const mockPhrases = [
-  {
-    id: '1',
-    text: 'A jornada de mil milhas começa com um único passo.',
-    author: 'Lao Tzu',
-    likes: 156
-  },
-  {
-    id: '2',
-    text: 'Seja a mudança que você quer ver no mundo.',
-    author: 'Mahatma Gandhi',
-    likes: 243
-  },
-  {
-    id: '3',
-    text: 'Acredite que você pode e você está no meio do caminho.',
-    author: 'Theodore Roosevelt',
-    likes: 189
-  },
-  {
-    id: '4',
-    text: 'O sucesso é a soma de pequenos esforços repetidos dia após dia.',
-    author: 'Robert Collier',
-    likes: 127
-  },
-  {
-    id: '5',
-    text: 'Sua única limitação é você mesmo.',
-    author: 'Anonymous',
-    likes: 198
-  }
-];
-
-export default function ListingScreen() {
-  const router = useRouter();
-
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.phraseCard}
-      onPress={() => {
-        router.push(`/tabs/${item.id}`);
-      }}
-    >
-      <View style={styles.userInfo}>
-        <Text style={styles.avatar}>{item.avatar}</Text>
-        <Text style={styles.userName}>{item.name}</Text>
-      </View>
-      <Text style={styles.phraseText}>"{item.text}"</Text>
-      <View style={styles.authorContainer}>
-        <Text style={styles.authorText}>- {item.author}</Text>
-        <Text style={styles.likesText}>❤️ {item.likes}</Text>
-      </View>
-    </TouchableOpacity>
-  );
+export default function ExploreScreen() {
+  const categorias = [
+    { titulo: "Alegria", frases: ["frase 1", "frase 2", "frase 3"] },
+    { titulo: "Amor", frases: ["frase 1", "frase 2", "frase 3"] },
+    { titulo: "Motivacional", frases: ["frase 1", "frase 2", "frase 3"] },
+    { titulo: "Motivacional", frases: ["frase 1", "frase 2", "frase 3"] },
+    { titulo: "Motivacional", frases: ["frase 1", "frase 2", "frase 3"] },
+    { titulo: "Motivacional", frases: ["frase 1", "frase 2", "frase 3"] },
+    { titulo: "Motivacional", frases: ["frase 1", "frase 2", "frase 3"] },
+    { titulo: "Motivacional", frases: ["frase 1", "frase 2", "frase 3"] },
+  ];
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>inspira.me</Text>
-      <FlatList
-        data={mockPhrases}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
+    <ScrollView style={styles.container}>
+      
+      <View style={{ marginTop: 25 }}>
+        <Header />
+      </View>
+
+      <Text style={styles.title}>Explorar</Text>
+
+      <View style={styles.searchContainer}>
+        <Ionicons
+          name="search"
+          size={18}
+          color="#6B8EAE"
+          style={{ marginRight: 6 }}
+        />
+        <TextInput
+          placeholder="Pesquisar"
+          style={styles.input}
+          placeholderTextColor="#6B8EAE"
+        />
+      </View>
+
+      {categorias.map((cat, idx) => (
+        <View key={idx} style={styles.categoryBlock}>
+          <Text style={styles.category}>{cat.titulo}</Text>
+
+          <View style={styles.cardRow}>
+            {cat.frases.map((frase, i) => (
+              <TouchableOpacity key={i} style={styles.card}>
+                <Text style={styles.cardText}>{frase}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      ))}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: 20
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
   },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#333'
-  },
-  listContainer: {
-    padding: 16
-  },
-  phraseCard: {
-    backgroundColor: '#f8f9fa',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  avatar: {
-    fontSize: 24,
-    marginRight: 8,
-  },
-  userName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-  },
-  phraseText: {
+
+  title: {
     fontSize: 18,
-    color: '#2c3e50',
-    marginBottom: 8,
-    lineHeight: 24
+    textAlign: "center",
+    marginTop: 20,
+    marginBottom: 25,
+    fontWeight: "600",
+    color: "#2E3A59",
   },
-  authorContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#eee'
+
+  category: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 15,
+    color: "#2E3A59",
   },
-  authorText: {
+
+  categoryBlock: {
+    marginTop: 25,
+    marginBottom: 30,
+  },
+
+  searchContainer: {
+    flexDirection: "row",
+    backgroundColor: "#E4EEF8",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    height: 45,
+  },
+
+  input: {
+    flex: 1,
     fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic'
+    color: "#2E3A59",
   },
-  likesText: {
+
+  cardRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  card: {
+    width: "30%",
+    paddingVertical: 35,
+    backgroundColor: "#E4EEF8",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 2,
+  },
+
+  cardText: {
     fontSize: 14,
-    color: '#e74c3c'
-  }
+    fontWeight: "500",
+    color: "#2E3A59",
+  },
 });
