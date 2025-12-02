@@ -45,7 +45,9 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.content}>
-        <Text style={styles.emoji}>🔐</Text>
+        <View style={styles.logoContainer}>
+          {/* Placeholder for logo */}
+        </View>
         <Text style={styles.title}>Bem-vindo!</Text>
         <Text style={styles.subtitle}>Faça login para continuar</Text>
 
@@ -83,10 +85,10 @@ export default function LoginScreen() {
         </TouchableOpacity>
 
         <View style={styles.registerContainer}>
-          <Text style={styles.registerText}>Não tem conta? </Text>
+          <Text style={styles.registerText}>Não possui um login? </Text>
           <Link href="/(auth)/register" asChild>
             <TouchableOpacity disabled={loading}>
-              <Text style={styles.registerLink}>Cadastre-se</Text>
+              <Text style={styles.registerLink}>Fazer cadastro</Text>
             </TouchableOpacity>
           </Link>
         </View>
@@ -102,17 +104,19 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#fff", // Alterado para fundo branco
   },
   content: {
     flex: 1,
     justifyContent: "center",
     padding: 20,
   },
-  emoji: {
-    fontSize: 60,
-    textAlign: "center",
+  logoContainer: {
+    height: 60, // Altura para o espaço da logo
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 20,
+    // Você pode colocar aqui o estilo adicional para a logo
   },
   title: {
     fontSize: 32,
@@ -128,16 +132,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: "#D9D9D9", // Fundo das caixas de texto
     borderRadius: 8,
     padding: 15,
     marginBottom: 15,
     fontSize: 16,
     borderWidth: 1,
     borderColor: "#ddd",
+    color: "#000", // Cor do texto
   },
   button: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#769FCD", // Fundo do botão
     borderRadius: 8,
     padding: 15,
     alignItems: "center",
@@ -149,7 +154,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff",
+    color: "#fff", // Cor do texto do botão
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -160,11 +165,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   registerText: {
-    color: "#666",
+    color: "#666", // Cor do texto do registro
     fontSize: 14,
   },
   registerLink: {
-    color: "#007AFF",
+    color: "#024C91", // Cor do link para cadastro
     fontSize: 14,
     fontWeight: "bold",
   },
