@@ -10,9 +10,10 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
+  Image,
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
-import { useRouter } from "expo-router";
+import { useRouter, Link } from "expo-router";
 
 export default function RegisterScreen() {
   const [name, setName] = useState("");
@@ -39,7 +40,6 @@ export default function RegisterScreen() {
       return;
     }
 
-    // Validação básica de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       Alert.alert("Erro", "Email inválido");
@@ -52,7 +52,6 @@ export default function RegisterScreen() {
 
       if (result.success) {
         Alert.alert("Sucesso", "Conta criada com sucesso!", [{ text: "OK" }]);
-        // O AuthContext já redireciona automaticamente
       } else {
         Alert.alert("Erro", result.message || "Falha ao criar conta");
       }
@@ -73,7 +72,13 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.content}>
-          <Text style={styles.emoji}>✨</Text>
+          <View style={styles.profilePictureContainer}>
+            <Image
+              source={require('../../assets/profile.jpg')} // Atualizar o caminho para a imagem
+              style={styles.profilePicture}
+            />
+            <Text style={styles.profilePictureText}>Adicionar foto de perfil</Text>
+          </View>
           <Text style={styles.title}>Criar Conta</Text>
           <Text style={styles.subtitle}>Preencha os dados abaixo</Text>
 
@@ -129,13 +134,14 @@ export default function RegisterScreen() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-            disabled={loading}
-          >
-            <Text style={styles.backText}>← Voltar para login</Text>
-          </TouchableOpacity>
+          <View style={styles.loginContainer}>
+            <Text style={styles.loginText}>Possui um cadastro? </Text>
+            <Link href="/(auth)/login" asChild>
+              <TouchableOpacity disabled={loading}>
+                <Text style={styles.loginLink}>Fazer login</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -145,7 +151,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#fff", // Fundo branco
   },
   scrollContent: {
     flexGrow: 1,
@@ -157,10 +163,22 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 40,
   },
-  emoji: {
-    fontSize: 60,
-    textAlign: "center",
+  profilePictureContainer: {
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 20,
+  },
+  profilePicture: {
+    width: 150, // Largura da imagem
+    height: 150, // Altura da imagem
+    borderRadius: 100, // Para fazer a imagem redonda
+    backgroundColor: "#D9D9D9", // Cor de fundo padrão
+    marginBottom: 5,
+  },
+  profilePictureText: {
+    color: "#656565", // Cor do texto
+    fontSize: 16,
+    textAlign: "center",
   },
   title: {
     fontSize: 32,
@@ -176,16 +194,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: "#D9D9D9", // Fundo das caixas de texto
     borderRadius: 8,
     padding: 15,
     marginBottom: 15,
     fontSize: 16,
     borderWidth: 1,
     borderColor: "#ddd",
+    color: "#656565", // Cor do texto
   },
   button: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#769FCD", // Fundo do botão
     borderRadius: 8,
     padding: 15,
     alignItems: "center",
@@ -197,17 +216,22 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff",
+    color: "#fff", // Cor do texto do botão
     fontSize: 16,
     fontWeight: "bold",
   },
-  backButton: {
+  loginContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 20,
     alignItems: "center",
-    padding: 10,
   },
-  backText: {
-    color: "#007AFF",
+  loginText: {
+    color: "#656565", // Cor do texto do link
+    fontSize: 14,
+  },
+  loginLink: {
+    color: "#024C91", // Cor do link para login
     fontSize: 14,
     fontWeight: "bold",
   },
