@@ -1,14 +1,56 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Dimensions, Platform } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
-import { Ionicons } from "@expo/vector-icons"; // menu hamburguer
+import { Ionicons } from "@expo/vector-icons";
+
+const { width } = Dimensions.get('window');
+const ITEM_WIDTH = width * 0.4;
 
 export default function HomeScreen() {
   const { user } = useAuth();
 
+  const carouselItems = [
+    { key: 'futuro', text: 'FUTURO', isSelected: false },
+    { key: 'planejamento', text: 'PLANEJAMENTO', isSelected: true },
+    { key: 'acao', text: 'AÇÃO', isSelected: false },
+    { key: 'proximo', text: 'PRÓXIMO PASSO', isSelected: false },
+  ];
+
+  const quoteCards = [
+    {
+      text: "“The best way to predict the future is to create it”",
+      author: "Peter Drucker",
+      image: "https://images.tcdn.com.br/img/img_prod/1088883/passaros_ii_guardanapos_para_decupagem_197_4_2958d1ac26eae9034e947c17e5414dd4.jpg"
+    },
+    {
+      text: "“Success is not final, failure is not fatal: it is the courage to continue that counts.”",
+      author: "Winston Churchill",
+      image: "https://i.pinimg.com/474x/83/8f/89/838f89978d72556b31e8d9c19f7c78e6.jpg"
+    },
+    {
+      text: "“Small steps every day lead to big results.”",
+      author: "Unknown",
+      image: "https://i.pinimg.com/474x/4a/22/32/4a22321ad6d9a1c75bf8d923bed5a6c2.jpg"
+    },
+    {
+      text: "“Believe you can and you're halfway there.”",
+      author: "Theodore Roosevelt",
+      image: "https://i.pinimg.com/474x/4e/fd/85/4efd85009e50d81d3a12cc779ddd44a6.jpg"
+    },
+  ];
+
+  const renderCarouselItem = ({ text, isSelected, key }) => (
+    <TouchableOpacity
+      key={key}
+      style={[styles.carouselButton, isSelected ? styles.buttonSelected : styles.buttonLight]}
+    >
+      <Text style={styles.buttonText}>{text}</Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={styles.container}>
-      {/* HEADER */}
+    <ScrollView style={styles.container}>
+
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.userAvatar}>
@@ -25,37 +67,37 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* QUOTE CARD */}
-      <View style={styles.quoteCard}>
-        <Text style={styles.quoteText}>
-          “The best way to predict the future is to create it”
-        </Text>
-        <View style={styles.line} />
-        <Text style={styles.author}>Peter Drucker</Text>
-        <Image
-          source={{ uri: "https://images.tcdn.com.br/img/img_prod/1088883/passaros_ii_guardanapos_para_decupagem_197_4_2958d1ac26eae9034e947c17e5414dd4.jpg" }} // logo do site
-          style={styles.logo}
-        />
-      </View>
+      {/* CARROSSEL DE FRASES */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingVertical: 20 }}
+      >
+        {quoteCards.map((item, index) => (
+          <View style={styles.quoteCard} key={index}>
+            <Text style={styles.quoteText}>{item.text}</Text>
+            <View style={styles.line} />
+            <Text style={styles.author}>{item.author}</Text>
+            <Image source={{ uri: item.image }} style={styles.logo} />
+          </View>
+        ))}
+      </ScrollView>
 
-      {/* PUSH CONTENT TO END */}
       <View style={{ flex: 1 }} />
 
-      {/* BUTTONS (mais para o final da tela) */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={[styles.button, styles.buttonLight]}>
-          <Text style={styles.buttonText}>FUTURO</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.button, styles.buttonSelected]}>
-          <Text style={styles.buttonText}>PLANEJAMENTO</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.button, styles.buttonLight]}>
-          <Text style={styles.buttonText}>AÇÃO</Text>
-        </TouchableOpacity>
+      <View style={styles.carouselContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollViewContent}
+          alwaysBounceHorizontal={true}
+        >
+          {carouselItems.map(renderCarouselItem)}
+        </ScrollView>
       </View>
-    </View>
+
+      <View style={{ height: 40 }} />
+    </ScrollView>
   );
 }
 
@@ -64,10 +106,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 50 : 60,
   },
 
-  // HEADER
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -101,14 +142,14 @@ const styles = StyleSheet.create({
     padding: 6,
   },
 
-  // QUOTE CARD
   quoteCard: {
+    width: width * 0.75,
     backgroundColor: "#E4EEF8",
     borderRadius: 12,
-    paddingVertical: 60,
+    paddingVertical: 40,
     paddingHorizontal: 15,
     alignItems: "center",
-    marginBottom: 20,
+    marginRight: 20,
   },
   quoteText: {
     fontSize: 18,
@@ -136,18 +177,20 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 
-  // BUTTONS
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 150, // distância da borda inferior
+  carouselContainer: {
+    marginHorizontal: -20,
   },
-  button: {
-    width: "30%",
-    paddingVertical: 40,
+  scrollViewContent: {
+    paddingHorizontal: 20,
+  },
+  carouselButton: {
+    width: ITEM_WIDTH,
+    paddingVertical: 35,
+    marginRight: 15,
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
+    minWidth: 100,
   },
   buttonLight: {
     backgroundColor: "#E4EEF8",
@@ -159,5 +202,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     color: "#2E3A59",
+    textAlign: "center",
   },
 });
