@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Dimensions, Platform } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,35 +9,29 @@ const ITEM_WIDTH = width * 0.4;
 export default function HomeScreen() {
   const { user } = useAuth();
 
-  const carouselItems = [
-    { key: 'futuro', text: 'FUTURO', isSelected: false },
-    { key: 'planejamento', text: 'PLANEJAMENTO', isSelected: true },
-    { key: 'acao', text: 'AÇÃO', isSelected: false },
-    { key: 'proximo', text: 'PRÓXIMO PASSO', isSelected: false },
-  ];
+  const [quoteCards, setQuoteCards] = useState([]);
+  const [carouselItems, setCarouselItems] = useState([]);
 
-  const quoteCards = [
-    {
-      text: "“The best way to predict the future is to create it”",
-      author: "Peter Drucker",
-      image: "https://images.tcdn.com.br/img/img_prod/1088883/passaros_ii_guardanapos_para_decupagem_197_4_2958d1ac26eae9034e947c17e5414dd4.jpg"
-    },
-    {
-      text: "“Success is not final, failure is not fatal: it is the courage to continue that counts.”",
-      author: "Winston Churchill",
-      image: "https://i.pinimg.com/474x/83/8f/89/838f89978d72556b31e8d9c19f7c78e6.jpg"
-    },
-    {
-      text: "“Small steps every day lead to big results.”",
-      author: "Unknown",
-      image: "https://i.pinimg.com/474x/4a/22/32/4a22321ad6d9a1c75bf8d923bed5a6c2.jpg"
-    },
-    {
-      text: "“Believe you can and you're halfway there.”",
-      author: "Theodore Roosevelt",
-      image: "https://i.pinimg.com/474x/4e/fd/85/4efd85009e50d81d3a12cc779ddd44a6.jpg"
-    },
-  ];
+  useEffect(() => {
+    fetch('http://localhost:5000/posts')
+      .then(response => response.json())
+      .then(data => setQuoteCards(data))
+      .catch(error => console.error("Erro ao buscar posts:", error));
+  }, []);
+
+  useEffect(() => {
+    fetch('http://localhost:5000/categories')
+      .then(response => response.json())
+      .then(data => {
+        const formattedItems = data.map((item, index) => ({
+          key: item.id ? String(item.id) : String(index),
+          text: item.name ? item.name.toUpperCase() : "ITEM",
+          isSelected: index === 0
+        }));
+        setCarouselItems(formattedItems);
+      })
+      .catch(error => console.error(error));
+  }, []);
 
   const renderCarouselItem = ({ text, isSelected, key }) => (
     <TouchableOpacity
@@ -75,10 +69,13 @@ export default function HomeScreen() {
       >
         {quoteCards.map((item, index) => (
           <View style={styles.quoteCard} key={index}>
-            <Text style={styles.quoteText}>{item.text}</Text>
+            <Text style={styles.quoteText}>{item.description}</Text>
             <View style={styles.line} />
-            <Text style={styles.author}>{item.author}</Text>
-            <Image source={{ uri: item.image }} style={styles.logo} />
+            <Text style={styles.author}>{item.ownerPost}</Text>
+            {/* Verifica se existe imagem antes de renderizar para evitar erro */}
+            {item.image ? (
+              <Image source={{ uri: item.image }} style={styles.logo} />
+            ) : null}
           </View>
         ))}
       </ScrollView>

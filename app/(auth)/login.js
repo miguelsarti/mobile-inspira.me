@@ -27,13 +27,25 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const result = await signIn(email, password);
+      const response = await fetch('http://localhost:5000/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-      if (!result.success) {
-        Alert.alert("Erro", result.message || "Falha ao fazer login");
+      const data = await response.json();
+
+      if (response.ok) {
+        await signIn(email, password, data.token, data.userExistsEmail);
+        Alert.alert("Sucesso", "Login realizado com sucesso!");
+      } else {
+        Alert.alert("Erro", data.error || "Credenciais inválidas");
       }
     } catch (error) {
-      Alert.alert("Erro", "Falha ao fazer login");
+      console.error('Erro ao fazer login:', error);
+      Alert.alert("Erro", "Não foi possível conectar ao servidor");
     } finally {
       setLoading(false);
     }

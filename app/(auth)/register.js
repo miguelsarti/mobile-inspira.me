@@ -17,15 +17,18 @@ import { useRouter, Link } from "expo-router";
 
 export default function RegisterScreen() {
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [bio, setBio] = useState("");
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const router = useRouter();
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !username || !email || !password || !confirmPassword || !avatarUrl || !bio) {
       Alert.alert("Erro", "Preencha todos os campos");
       return;
     }
@@ -48,15 +51,36 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      const result = await signUp(name, email, password);
+      const response = await fetch('http://localhost:5000/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          username,
+          email,
+          password,
+          avatarUrl,
+          bio,
+        }),
+      });
 
-      if (result.success) {
-        Alert.alert("Sucesso", "Conta criada com sucesso!", [{ text: "OK" }]);
+      const data = await response.json();
+
+      if (response.ok) {
+        Alert.alert("Sucesso", "Conta criada com sucesso!", [
+          {
+            text: "OK",
+            onPress: () => router.replace("/(auth)/login"),
+          },
+        ]);
       } else {
-        Alert.alert("Erro", result.message || "Falha ao criar conta");
+        Alert.alert("Erro", data.error || "Falha ao criar conta");
       }
     } catch (error) {
-      Alert.alert("Erro", "Falha ao criar conta");
+      console.error('Erro ao registrar:', error);
+      Alert.alert("Erro", "Não foi possível conectar ao servidor");
     } finally {
       setLoading(false);
     }
@@ -74,7 +98,7 @@ export default function RegisterScreen() {
         <View style={styles.content}>
           <View style={styles.profilePictureContainer}>
             <Image
-              source={require('../../assets/profile.jpg')} // Atualizar o caminho para a imagem
+              source={require('../../assets/profile.png')} // Atualizar o caminho para a imagem
               style={styles.profilePicture}
             />
             <Text style={styles.profilePictureText}>Adicionar foto de perfil</Text>
@@ -93,12 +117,40 @@ export default function RegisterScreen() {
 
           <TextInput
             style={styles.input}
+            placeholder="Nome de usuário"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            editable={!loading}
+          />
+
+          <TextInput
+            style={styles.input}
             placeholder="Email"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            editable={!loading}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="URL do Avatar"
+            value={avatarUrl}
+            onChangeText={setAvatarUrl}
+            autoCapitalize="none"
+            editable={!loading}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Bio"
+            value={bio}
+            onChangeText={setBio}
+            multiline
+            numberOfLines={3}
             editable={!loading}
           />
 

@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,20 +11,24 @@ import { Ionicons } from "@expo/vector-icons";
 import Header from "../components/header/header.js";
 
 export default function ExploreScreen() {
-  const categorias = [
-    { titulo: "Alegria", frases: ["Sorrir ilumina a alma", "A vida é leve", "Felicidade mora no agora"] },
-    { titulo: "Amor", frases: ["Amar transforma", "O amor acalma", "Você é importante"] },
-    { titulo: "Motivacional", frases: ["Acredite em você", "Cada dia é uma chance", "Foco e coragem"] },
-    { titulo: "Motivacional", frases: ["Você consegue", "O esforço vale a pena", "O impossível é treino"] },
-    { titulo: "Motivacional", frases: ["Vá além", "Um passo por vez", "Seja melhor hoje"] },
-    { titulo: "Motivacional", frases: ["Persistência vence", "Energia atrai", "Nada muda se você não mudar"] },
-    { titulo: "Motivacional", frases: ["Sonhe alto", "Trabalhe em silêncio", "Resultados falam"] },
-    { titulo: "Motivacional", frases: ["Nunca desista", "Você é forte", "A jornada é sua"] },
-  ];
+  const [categorias, setCategorias] = useState([]);
+
+  useEffect(() => {
+    fetch('http://localhost:5000/categories')
+      .then(response => response.json())
+      .then(data => {
+        const dadosAdaptados = data.map(cat => ({
+          titulo: cat.description,
+          frases: cat.registrosCategorias.map(registro => registro.post.description)
+        }));
+        setCategorias(dadosAdaptados);
+      })
+      .catch(error => console.error(error));
+  }, []);
 
   return (
     <ScrollView style={styles.container}>
-      
+
       <View style={{ marginTop: 25 }}>
         <Header />
       </View>
@@ -48,7 +53,6 @@ export default function ExploreScreen() {
         <View key={idx} style={styles.categoryBlock}>
           <Text style={styles.category}>{cat.titulo}</Text>
 
-          {/* CARROSSEL HORIZONTAL AQUI */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {cat.frases.map((frase, i) => (
               <TouchableOpacity key={i} style={styles.cardCarousel}>
@@ -106,7 +110,6 @@ const styles = StyleSheet.create({
     color: "#2E3A59",
   },
 
-  /* NOVO CARD PARA CARROSSEL */
   cardCarousel: {
     width: 180,
     paddingVertical: 35,
