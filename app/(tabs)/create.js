@@ -1,17 +1,33 @@
-import React from 'react'; 
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
+import React from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Image,
+  Dimensions,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons'; // Importando o Ionicons para o ícone de menu
+import { Ionicons } from '@expo/vector-icons';
+import Header from "../components/header/header.js";
+
+const { width } = Dimensions.get("window");
+const CARD_SIZE = width * 0.22;  // tamanho responsivo
+const CATEGORY_PADDING = width * 0.06;
 
 export default function CreatePhraseScreen() {
   const router = useRouter();
+
   const [phrase, setPhrase] = React.useState('');
   const [author, setAuthor] = React.useState('');
   const [category, setCategory] = React.useState('');
-  const [background, setBackground] = React.useState('#f0f0f0'); // Alterado para um cinza claro
+  const [background, setBackground] = React.useState('#f0f0f0');
+
   const user = {
-    name: 'Anna', // Substitua com dados reais de usuário
-    photoURL: 'https://via.placeholder.com/40', // Substitua com dados reais de foto
+    name: 'Anna',
+    photoURL: 'https://via.placeholder.com/40',
   };
 
   const handlePostPhrase = () => {
@@ -23,206 +39,185 @@ export default function CreatePhraseScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.userAvatar}>
-            <Image
-              source={{ uri: user?.photoURL || "https://via.placeholder.com/40" }}
-              style={styles.avatarImage}
-            />
-          </View>
-          <Text style={styles.greeting}>Good Morning, {user?.name || "User"}</Text>
-        </View>
 
-        <TouchableOpacity style={styles.menuButton}>
-          <Ionicons name="menu" size={32} color="#6B8EAE" />
-        </TouchableOpacity>
+<View style={{ marginTop: 25 }}>
+        <Header />
       </View>
 
-      {/* Input de Frase e Autor */}
+      {/* INPUTS */}
       <TextInput
         style={styles.input}
         placeholder="Digite sua frase inspiradora aqui..."
         value={phrase}
         onChangeText={setPhrase}
       />
-      
+
       <TextInput
         style={styles.input}
         placeholder="Autor(a)"
         value={author}
         onChangeText={setAuthor}
       />
-      
+
+      {/* FUNDO DO CARD */}
       <Text style={styles.label}>Fundo do card</Text>
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel}>
-        <TouchableOpacity
-          style={[styles.colorOption, { backgroundColor: background }]}
-          onPress={() => setBackground('#f0f0f0')}  // Alterado para cinza claro
-        />
-        <TouchableOpacity
-          style={[styles.colorOption, { backgroundColor: '#A6C8E0' }]}
-          onPress={() => setBackground('#A6C8E0')}
-        />
-        <TouchableOpacity
-          style={[styles.colorOption, { backgroundColor: '#8BB9D4' }]}
-          onPress={() => setBackground('#8BB9D4')}
-        />
-        <TouchableOpacity
-          style={[styles.colorOption, { backgroundColor: '#5D8AA8' }]}
-          onPress={() => setBackground('#5D8AA8')}
-        />
+        {["#f0f0f0", "#A6C8E0", "#8BB9D4", "#5D8AA8"].map((cor, i) => (
+          <TouchableOpacity
+            key={i}
+            style={[styles.colorOption, { backgroundColor: cor }]}
+            onPress={() => setBackground(cor)}
+          />
+        ))}
       </ScrollView>
 
+      {/* CATEGORIAS */}
       <Text style={styles.label}>Categorias</Text>
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel}>
-        <TouchableOpacity
-          style={[
-            styles.categoryButton,
-            category === 'AMOR' && styles.selectedCategory
-          ]}
-          onPress={() => setCategory('AMOR')}
-        >
-          <Text style={styles.categoryText}>AMOR</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.categoryButton,
-            category === 'FAMÍLIA' && styles.selectedCategory
-          ]}
-          onPress={() => setCategory('FAMÍLIA')}
-        >
-          <Text style={styles.categoryText}>FAMÍLIA</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.categoryButton,
-            category === 'AMIZADE' && styles.selectedCategory
-          ]}
-          onPress={() => setCategory('AMIZADE')}
-        >
-          <Text style={styles.categoryText}>AMIZADE</Text>
-        </TouchableOpacity>
+        {["AMOR", "FAMÍLIA", "AMIZADE", "MOTIVAÇÃO"].map((cat) => (
+          <TouchableOpacity
+            key={cat}
+            style={[
+              styles.categoryButton,
+              category === cat && styles.selectedCategory
+            ]}
+            onPress={() => setCategory(cat)}
+          >
+            <Text style={styles.categoryText}>{cat}</Text>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
 
+      {/* BOTÕES */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={[styles.postButton, { backgroundColor: '#3498db' }]} onPress={handlePostPhrase}>
+        <TouchableOpacity
+          style={[styles.postButton, { backgroundColor: '#3498db' }]}
+          onPress={handlePostPhrase}
+        >
           <Text style={styles.buttonText}>Postar Frase</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
-          style={[styles.postButton, { backgroundColor: '#ccc' }] }
+          style={[styles.postButton, { backgroundColor: '#ccc' }]}
           onPress={() => router.back()}
         >
           <Text style={styles.buttonText}>Cancelar</Text>
         </TouchableOpacity>
       </View>
+
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 20, // Aumentado o padding para maior espaçamento
+    padding: 20,
     backgroundColor: '#fff',
   },
-  // Estilos para o HEADER
+
+  /* === HEADER === */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 40, // Aumentado o espaçamento inferior
+    marginBottom: 30,
   },
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
   },
   userAvatar: {
-    width: 60, // Aumentado o tamanho do avatar
-    height: 60, // Aumentado o tamanho do avatar
-    borderRadius: 30, // Aumentando a borda para manter o arredondado
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: "#DCE6F2",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 15,
   },
   avatarImage: {
-    width: 60, // Aumentando o tamanho da imagem do avatar
-    height: 60, // Aumentando o tamanho da imagem do avatar
+    width: 60,
+    height: 60,
     borderRadius: 30,
   },
   greeting: {
-    fontSize: 22, // Aumentando o tamanho da saudação
-    fontWeight: "600", // Deixando o texto mais grosso
+    fontSize: width * 0.05,
+    fontWeight: "600",
     color: "#6B8EAE",
   },
   menuButton: {
-    padding: 8, // Aumentando o padding do botão de menu
+    padding: 8,
   },
-  // Estilos para os inputs
+
+  /* === INPUTS === */
   input: {
-    height: 60, // Aumentando a altura do campo de entrada
+    height: 60,
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 12, // Tornando o campo de entrada mais arredondado
-    marginBottom: 20, // Aumentando o espaçamento
-    paddingLeft: 20, // Aumentando o espaçamento interno
-    fontSize: 18, // Aumentando o tamanho da fonte
+    borderRadius: 12,
+    marginBottom: 20,
+    paddingLeft: 20,
+    fontSize: 18,
   },
+
+  /* === LABELS === */
   label: {
-    fontSize: 18, // Aumentando o tamanho da fonte do rótulo
-    fontWeight: '600', // Deixando mais forte
+    fontSize: 18,
+    fontWeight: '600',
     color: '#333',
-    marginBottom: 12, // Aumentando o espaçamento
+    marginBottom: 12,
   },
+
+  /* === CARROSSEL === */
   carousel: {
-    marginBottom: 40, // Aumentando o espaçamento entre os elementos
+    marginBottom: 30,
   },
+
+  /* === OPÇÕES DE COR (RESPONSIVO) === */
   colorOption: {
-    width: 80, // Aumentando o tamanho dos botões de cor
-    height: 80, // Aumentando o tamanho dos botões de cor
+    width: CARD_SIZE,
+    height: CARD_SIZE,
     borderRadius: 16,
-    marginRight: 20, // Aumentando o espaçamento entre as opções
+    marginRight: 18,
   },
-  // Estilos para os botões de categoria
+
+  /* === CATEGORIAS === */
   categoryButton: {
     backgroundColor: '#f0f0f0',
-    height: 50, // Aumentando a altura dos botões de categoria
-    paddingVertical: 10,  // Deixando o botão mais "gordinho"
-    paddingHorizontal: 28,  // Aumentando o tamanho do botão
-    borderRadius: 30,  // Tornando o botão mais arredondado
-    marginRight: 25, // Ajustando o espaçamento
-    elevation: 5,  // Sombra para dar o efeito de profundidade
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 30,
+    marginRight: 20,
+
+    
   },
   selectedCategory: {
     backgroundColor: '#A6C8E0',
   },
   categoryText: {
-    fontSize: 18, // Aumentando o tamanho da fonte das categorias
-    fontWeight: '400', // Tornando o texto mais grosso
+    fontSize: 14,
     color: '#333',
+    fontWeight: "600",
   },
+
+  /* === BOTÕES === */
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 40, // Aumentando o espaçamento entre os botões
+    marginTop: 10,
   },
   postButton: {
-    paddingVertical: 14, // Aumentando o tamanho do botão
-    paddingHorizontal: 40, // Aumentando o tamanho do botão
-    borderRadius: 10, // Tornando o botão mais arredondado
     flex: 1,
+    paddingVertical: 14,
+    borderRadius: 10,
     alignItems: 'center',
-    marginRight: 20, // Adicionado espaçamento entre os botões
+    marginRight: 12,
   },
   buttonText: {
-    fontSize: 13, // Aumentando o tamanho da fonte do botão
+    fontSize: 15,
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

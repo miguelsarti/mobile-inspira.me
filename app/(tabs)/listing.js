@@ -11,14 +11,14 @@ import Header from "../components/header/header.js";
 
 export default function ExploreScreen() {
   const categorias = [
-    { titulo: "Alegria", frases: ["frase 1", "frase 2", "frase 3"] },
-    { titulo: "Amor", frases: ["frase 1", "frase 2", "frase 3"] },
-    { titulo: "Motivacional", frases: ["frase 1", "frase 2", "frase 3"] },
-    { titulo: "Motivacional", frases: ["frase 1", "frase 2", "frase 3"] },
-    { titulo: "Motivacional", frases: ["frase 1", "frase 2", "frase 3"] },
-    { titulo: "Motivacional", frases: ["frase 1", "frase 2", "frase 3"] },
-    { titulo: "Motivacional", frases: ["frase 1", "frase 2", "frase 3"] },
-    { titulo: "Motivacional", frases: ["frase 1", "frase 2", "frase 3"] },
+    { titulo: "Alegria", frases: ["Sorrir ilumina a alma", "A vida é leve", "Felicidade mora no agora"] },
+    { titulo: "Amor", frases: ["Amar transforma", "O amor acalma", "Você é importante"] },
+    { titulo: "Motivacional", frases: ["Acredite em você", "Cada dia é uma chance", "Foco e coragem"] },
+    { titulo: "Motivacional", frases: ["Você consegue", "O esforço vale a pena", "O impossível é treino"] },
+    { titulo: "Motivacional", frases: ["Vá além", "Um passo por vez", "Seja melhor hoje"] },
+    { titulo: "Motivacional", frases: ["Persistência vence", "Energia atrai", "Nada muda se você não mudar"] },
+    { titulo: "Motivacional", frases: ["Sonhe alto", "Trabalhe em silêncio", "Resultados falam"] },
+    { titulo: "Motivacional", frases: ["Nunca desista", "Você é forte", "A jornada é sua"] },
   ];
 
   return (
@@ -48,13 +48,15 @@ export default function ExploreScreen() {
         <View key={idx} style={styles.categoryBlock}>
           <Text style={styles.category}>{cat.titulo}</Text>
 
-          <View style={styles.cardRow}>
+          {/* CARROSSEL HORIZONTAL AQUI */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {cat.frases.map((frase, i) => (
-              <TouchableOpacity key={i} style={styles.card}>
+              <TouchableOpacity key={i} style={styles.cardCarousel}>
                 <Text style={styles.cardText}>{frase}</Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
+
         </View>
       ))}
     </ScrollView>
@@ -104,18 +106,15 @@ const styles = StyleSheet.create({
     color: "#2E3A59",
   },
 
-  cardRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  card: {
-    width: "30%",
+  /* NOVO CARD PARA CARROSSEL */
+  cardCarousel: {
+    width: 180,
     paddingVertical: 35,
     backgroundColor: "#E4EEF8",
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 15,
 
     shadowColor: "#000",
     shadowOpacity: 0.05,
@@ -128,5 +127,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     color: "#2E3A59",
+    textAlign: "center",
   },
 });
