@@ -52,12 +52,12 @@ export default function ProfileScreen() {
     },
   ]);
 
-  // 🔹 CONTROLA MODAL DE EDIÇÃO
+  // 🔹 MODAL DE EDIÇÃO
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [phraseBeingEdited, setPhraseBeingEdited] = useState(null);
   const [editedText, setEditedText] = useState("");
 
-  // Abrir menu de edição
+  // Abrir opções de edição
   const openEditOptions = (item) => {
     setPhraseBeingEdited(item);
     setEditedText(item.text);
@@ -71,13 +71,14 @@ export default function ProfileScreen() {
         q.id === phraseBeingEdited.id ? { ...q, text: editedText } : q
       )
     );
-
     setEditModalVisible(false);
   };
 
-  // Apagar frase criada
+  // Deletar frase
   const deletePhrase = () => {
-    setCreatedQuotes((prev) => prev.filter((q) => q.id !== phraseBeingEdited.id));
+    setCreatedQuotes((prev) =>
+      prev.filter((q) => q.id !== phraseBeingEdited.id)
+    );
     setEditModalVisible(false);
   };
 
@@ -141,13 +142,12 @@ export default function ProfileScreen() {
           {selectedTab === "liked" ? "Frases curtidas:" : "Frases criadas:"}
         </Text>
 
-        {/* LISTA DE FRASES */}
+        {/* LISTA */}
         {selectedTab === "liked"
           ? likedQuotes.map((item) => (
               <View key={item.id} style={styles.quoteCard}>
                 <Text style={styles.quoteText}>"{item.text}"</Text>
                 <View style={styles.line}></View>
-
                 <Text style={styles.author}>{item.author}</Text>
 
                 <TouchableOpacity style={styles.editButton}>
@@ -159,25 +159,26 @@ export default function ProfileScreen() {
               <View key={item.id} style={styles.quoteCard}>
                 <Text style={styles.quoteText}>"{item.text}"</Text>
                 <View style={styles.line}></View>
-
                 <Text style={styles.author}>{item.author}</Text>
 
-                {/* ÍCONE CLICÁVEL PARA EDITAR/APAGAR */}
                 <TouchableOpacity
                   style={styles.editButton}
                   onPress={() => openEditOptions(item)}
                 >
-                  <Ionicons name="document-text-outline" size={22} color="#000" />
+                  <Ionicons
+                    name="document-text-outline"
+                    size={22}
+                    color="#000"
+                  />
                 </TouchableOpacity>
               </View>
             ))}
       </View>
 
-      {/* MODAL DE EDIÇÃO */}
+      {/* MODAL */}
       <Modal visible={editModalVisible} transparent animationType="slide">
         <View style={styles.modalBackground}>
           <View style={styles.modalBox}>
-
             <Text style={styles.modalTitle}>Editar frase</Text>
 
             <TextInput
@@ -188,11 +189,17 @@ export default function ProfileScreen() {
             />
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.saveButton} onPress={saveEditedPhrase}>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={saveEditedPhrase}
+              >
                 <Text style={styles.saveText}>Salvar</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.deleteButton} onPress={deletePhrase}>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={deletePhrase}
+              >
                 <Ionicons name="trash" size={22} color="#fff" />
               </TouchableOpacity>
             </View>
@@ -290,7 +297,6 @@ const styles = StyleSheet.create({
     right: 15,
   },
 
-  // Modal
   modalBackground: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
