@@ -47,17 +47,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signIn = async (email, password) => {
+  const signIn = async (userData) => {
     try {
-      const result = await validateLogin(email, password);
-
-      if (result.success) {
-        setUser(result.user);
-        await saveUser(result.user);
+      // Se recebermos um objeto, assumimos que é o usuário já autenticado pelo backend
+      if (typeof userData === 'object' && userData !== null) {
+        setUser(userData);
+        await saveUser(userData);
         return { success: true };
       }
 
-      return { success: false, message: result.message };
+      return { success: false, message: "Método de login inválido" };
     } catch (error) {
       console.error("Erro ao fazer login:", error);
       return { success: false, message: "Erro ao fazer login" };
