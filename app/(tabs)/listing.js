@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from 'expo-router'; // Para recarregar dados quando a tela é focada
+import { useFocusEffect, useRouter } from 'expo-router'; // Para recarregar dados quando a tela é focada
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Importar AsyncStorage
 import Header from "../components/header/header.js";
 import CategoryCarousel from "../components/CategoryCarousel";
@@ -18,6 +18,7 @@ import { useAuth } from "../../contexts/AuthContext";
 
 export default function ExploreScreen() {
   const { user } = useAuth();
+  const router = useRouter();
   const [categorias, setCategorias] = useState([]);
   const [userPhrases, setUserPhrases] = useState([]); // Novo estado para frases do usuário
   const [searchText, setSearchText] = useState("");
@@ -170,6 +171,9 @@ export default function ExploreScreen() {
     cat.titulo.toLowerCase().includes(searchText.toLowerCase())
   );
 
+  const handlePostPress = (item) => {
+    router.push(`/details/${item.id}`);
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -207,6 +211,7 @@ export default function ExploreScreen() {
                 title={cat.titulo}
                 items={cat.items}
                 onLike={handleLike}
+                onPress={handlePostPress}
               />
             ))
           ) : (

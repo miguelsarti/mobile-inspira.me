@@ -22,6 +22,7 @@ export default function PostDetalhes() {
   const router = useRouter();
 
   const [post, setPost] = useState(null);
+  const [categoriesData, setCategoriesData] = useState([]);
 
   useEffect(() => {
     fetch(`${API_URL}/posts/${id}`)
@@ -31,6 +32,27 @@ export default function PostDetalhes() {
       })
       .catch((err) => console.log(err));
   }, []);
+
+  useEffect(() => {
+    fetch(`${API_URL}/categorias`)
+      .then(response => response.json())
+      .then(data => {
+        const items = Array.isArray(data) ? data : [];
+        setCategoriesData(items);
+      })
+      .catch(error => console.error("Erro ao buscar categorias:", error));
+  }, []);
+
+  const getCategoryDescription = (catRel) => {
+    if (catRel.category && catRel.category.description) {
+      return catRel.category.description;
+    }
+    if (categoriesData.length > 0 && catRel.categoryId) {
+      const cat = categoriesData.find(c => c.id === catRel.categoryId);
+      if (cat && cat.description) return cat.description;
+    }
+    return "Categoria";
+  };
 
   if (!post) {
     return (
@@ -92,20 +114,27 @@ export default function PostDetalhes() {
         </Text>
       </View>
 
-      <View style={styles.categoriesContainer}>
-        {post.categories?.map((catRel, index) => (
-          <View
-            key={index}
-            style={[
-              styles.categoryBox,
-              { backgroundColor: catRel.background || "#D0E0F7" },
-            ]}
-          >
-            <Text style={styles.categoryText}>
-              {(catRel.category?.description || "Sem nome").toUpperCase()}
-            </Text>
-          </View>
-        ))}
+      <View style={styles.carouselContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollViewContent}
+          alwaysBounceHorizontal={true}
+        >
+          {post.categories?.map((catRel, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.carouselButton,
+                { backgroundColor: catRel.background || '#E4EEF8' }
+              ]}
+            >
+              <Text style={[styles.buttonText, { color: '#FFF' }]}>
+                {getCategoryDescription(catRel).toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       <View style={{ height: 60 }} />
@@ -233,24 +262,25 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  categoriesContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
+  carouselContainer: {
+    marginHorizontal: -20,
     marginTop: 20,
   },
-  
-  categoryBox: {
-    paddingVertical: 8,
-    paddingHorizontal: 18,
-    borderRadius: 18,
-    alignSelf: "flex-start",
+  scrollViewContent: {
+    paddingHorizontal: 20,
   },
-  
-  categoryText: {
-    color: "#2E3A59",
-    fontWeight: "600",
-    fontSize: 13,
-    flexShrink: 1,
+  carouselButton: {
+    width: 110,
+    height: 110,
+    marginRight: 15,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 10,
+  },
+  buttonText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    textAlign: 'center',
   },
 });
