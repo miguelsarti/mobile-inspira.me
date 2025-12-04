@@ -1,27 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   ScrollView,
+  TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from 'expo-router'; // Para recarregar dados quando a tela é focada
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Importar AsyncStorage
 import Header from "../components/header/header.js";
 import CategoryCarousel from "../components/CategoryCarousel";
 import API_URL from "../../utils/api";
-import { useAuth } from "../../contexts/AuthContext";
 
 export default function ExploreScreen() {
   const { user } = useAuth();
   const [categorias, setCategorias] = useState([]);
+  const [userPhrases, setUserPhrases] = useState([]); // Novo estado para frases do usuário
   const [searchText, setSearchText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isLocalLoading, setIsLocalLoading] = useState(true); // Estado para carregamento local
 
+  // --- Função para carregar frases da API ---
   useEffect(() => {
-    if (!user) return;
-
     // Buscamos tanto as categorias quanto os posts para garantir que temos todos os dados
     Promise.all([
       fetch(`${API_URL}/categorias`).then(res => res.json()),
@@ -51,15 +54,9 @@ export default function ExploreScreen() {
                   if (!grouped[catName]) {
                     grouped[catName] = [];
                   }
-
-                  const isLiked = post.likes ? post.likes.some(l => l.userId === user.id) : false;
-
                   grouped[catName].push({
-                    id: post.id,
                     text: post.description,
-                    background: post.backgroundColor || catRel.background,
-                    likesCount: post.numberLikes,
-                    isLiked: isLiked
+                    background: catRel.background
                   });
                 }
               });
@@ -77,59 +74,37 @@ export default function ExploreScreen() {
         setIsLoading(false);
       })
       .catch(error => {
-        console.error("Erro ao buscar dados:", error);
+        console.error("Erro ao buscar categorias da API:", error);
         setIsLoading(false);
       });
-  }, [user]);
-
-  const handleLike = async (postId) => {
-    try {
-      // Atualização Otimista
-      setCategorias(prevCats => prevCats.map(cat => ({
-        ...cat,
-        items: cat.items.map(item => {
-          if (item.id === postId) {
-            const wasLiked = item.isLiked;
-            return {
-              ...item,
-              isLiked: !wasLiked,
-              likesCount: wasLiked ? item.likesCount - 1 : item.likesCount + 1
-            };
-          }
-          return item;
-        })
-      })));
-
-      // Chamada API (assumindo endpoint de toggle ou create/delete)
-      // Como não temos o endpoint exato, vamos tentar um POST para /likes/toggle ou similar
-      // Se não existir, o usuário terá que implementar.
-      // Mas baseando no seed, existe RegistroCurtida.
-      // Vamos tentar POST /likes com { postId, userId }
-
-      const response = await fetch(`${API_URL}/likes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          postId: postId,
-          userId: user.id
-        }),
-      });
-
-      if (!response.ok) {
-        // Reverter se falhar
-        console.error("Falha ao curtir");
-        // TODO: Reverter estado
-      }
-    } catch (error) {
-      console.error("Erro ao curtir:", error);
-    }
-  };
+  }, []);
 
   const categoriasFiltradas = categorias.filter(cat =>
     cat.titulo.toLowerCase().includes(searchText.toLowerCase())
   );
+
+
+  const renderCard = (frase, i, cat) => (
+    <TouchableOpacity
+      key={i}
+      style={[
+        styles.cardCarousel,
+        cat.isUserContent && {
+          backgroundColor: cat.userBackgrounds[i] || '#f0f0f0',
+        }
+      ]}
+    >
+      <Text style={[styles.cardText, cat.isUserContent && styles.userCardText]} numberOfLines={3}>
+        {frase}
+      </Text>
+      {cat.isUserContent && userPhrases[i]?.author && (
+        <Text style={styles.authorText}>
+          - {userPhrases[i].author}
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+
 
   return (
     <ScrollView style={styles.container}>
@@ -156,7 +131,7 @@ export default function ExploreScreen() {
         />
       </View>
 
-      {isLoading ? (
+      {(isLoading || isLocalLoading) ? (
         <ActivityIndicator size="large" color="#6B8EAE" style={{ marginTop: 50 }} />
       ) : (
         <>
@@ -166,14 +141,11 @@ export default function ExploreScreen() {
                 key={idx}
                 title={cat.titulo}
                 items={cat.items}
-                onLike={handleLike}
               />
             ))
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>
-                Nenhuma categoria encontrada para "{searchText}".
-              </Text>
+              <Text style={styles.emptyText}>Nenhuma categoria ou criação encontrada para "{searchText}". </Text>
             </View>
           )}
         </>
@@ -198,6 +170,18 @@ const styles = StyleSheet.create({
     color: "#2E3A59",
   },
 
+  category: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 15,
+    color: "#2E3A59",
+  },
+
+  categoryBlock: {
+    marginTop: 25,
+    marginBottom: 30,
+  },
+
   searchContainer: {
     flexDirection: "row",
     backgroundColor: "#E4EEF8",
@@ -214,11 +198,41 @@ const styles = StyleSheet.create({
     color: "#2E3A59",
   },
 
-  emptyState: {
-    marginTop: 50,
-    alignItems: 'center',
+
+  cardCarousel: {
+    width: 180,
+    paddingHorizontal: 10,
+    paddingVertical: 35,
+    backgroundColor: "#E4EEF8",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 2,
   },
 
+  cardText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#2E3A59",
+    textAlign: "center",
+  },
+
+  userCardText: {
+    color: '#333', // Talvez mude a cor para contraste em fundos coloridos
+    marginBottom: 5,
+  },
+  authorText: {
+    fontSize: 12,
+    color: '#333',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 5,
+  },
   emptyText: {
     fontSize: 16,
     color: '#6B8EAE',
