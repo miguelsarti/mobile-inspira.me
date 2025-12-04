@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Dimensions, Platform } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
-import { Ionicons } from "@expo/vector-icons";
 import API_URL from "../../utils/api";
 
 const { width } = Dimensions.get('window');
@@ -102,9 +101,6 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>Good Morning, {user?.name || "User"}</Text>
         </View>
 
-        <TouchableOpacity style={styles.menuButton}>
-          <Ionicons name="menu" size={28} color="#6B8EAE" />
-        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -129,9 +125,6 @@ export default function HomeScreen() {
               <Text style={styles.quoteText}>{item.description}</Text>
               <View style={styles.line} />
               <Text style={styles.author}>{item.ownerPost}</Text>
-              {item.image ? (
-                <Image source={{ uri: item.image }} style={styles.logo} />
-              ) : null}
             </View>
 
             <TouchableOpacity onPress={() => handleLike(item.id)} style={styles.likeButton}>
@@ -162,7 +155,7 @@ export default function HomeScreen() {
                 { backgroundColor: catRel.background || '#E4EEF8' }
               ]}
             >
-              <Text style={[styles.buttonText, { color: '#FFF' }]}>
+              <Text style={styles.buttonText}>
                 {getCategoryDescription(catRel).toUpperCase()}
               </Text>
             </TouchableOpacity>
@@ -209,9 +202,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     color: "#6B8EAE",
-  },
-  menuButton: {
-    padding: 6,
   },
 
   quoteCard: {
@@ -310,10 +300,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 10,
+    borderWidth: 1,
+    borderColor: "#000000",
   },
   buttonText: {
     fontSize: 12,
     fontWeight: "bold",
     textAlign: 'center',
+    color: "#000000",
   },
 });

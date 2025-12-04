@@ -61,10 +61,12 @@ export default function ExploreScreen() {
 
                   const isLiked = post.likes ? post.likes.some(l => l.userId === user.id) : false;
 
+                  const backgroundColor = post.backgroundColor || catRel.background || '#E4EEF8';
+
                   grouped[catName].push({
                     id: post.id,
                     text: post.description,
-                    background: post.backgroundColor || catRel.background,
+                    backgroundColor,
                     likesCount: post.numberLikes,
                     isLiked: isLiked
                   });
@@ -159,7 +161,7 @@ export default function ExploreScreen() {
       items: userPhrases.map((p, index) => ({
         id: p.id || `local-${index}`,
         text: p.text,
-        background: p.background,
+        backgroundColor: p.backgroundColor || p.background,
         likesCount: 0,
         isLiked: false
       }))

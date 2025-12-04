@@ -1,7 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, Image } from "react-native";
 import { useAuth } from "../../../contexts/AuthContext.js";
-import { Ionicons } from "@expo/vector-icons"; // menu hamburguer
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -53,8 +52,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     color: "#6B8EAE",
-  },
-  menuButton: {
-    padding: 6,
   },
 });

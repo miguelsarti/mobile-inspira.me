@@ -12,7 +12,7 @@ export default function CategoryCarousel({ title, items, onLike, onPress }) {
                         key={index}
                         style={[
                             styles.cardCarousel,
-                            { backgroundColor: item.background || "#DCE6F2" }
+                            { backgroundColor: item.backgroundColor || item.background || "#DCE6F2" }
                         ]}
                         onPress={() => onPress && onPress(item)}
                         activeOpacity={0.9}
@@ -61,23 +61,23 @@ const styles = StyleSheet.create({
         padding: 15,
         backgroundColor: "#DCE6F2",
         borderRadius: 12,
-        justifyContent: "center",
+        justifyContent: "space-between",
         alignItems: "center",
         marginRight: 15,
+        borderWidth: 1,
+        borderColor: "#000000",
     },
     cardText: {
         fontSize: 14,
         fontStyle: "italic",
-        color: "#2E3A59",
+        color: "#000000",
         textAlign: "center",
-        marginBottom: 20, // Espaço para o coração não ficar em cima do texto
+        marginBottom: 10,
     },
     likeContainer: {
-        position: 'absolute',
-        bottom: 10,
-        right: 10,
         flexDirection: "row",
         alignItems: "center",
+        alignSelf: "flex-end",
     },
     heartIcon: {
         width: 20,
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     },
     likeCount: {
         fontSize: 12,
-        color: "#2E3A59",
+        color: "#000000",
         fontWeight: "bold"
     }
 });
