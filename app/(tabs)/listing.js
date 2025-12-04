@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'; // Importa
 import Header from "../components/header/header.js";
 import CategoryCarousel from "../components/CategoryCarousel";
 import API_URL from "../../utils/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function ExploreScreen() {
   const { user } = useAuth();
@@ -25,6 +26,8 @@ export default function ExploreScreen() {
 
   // --- Função para carregar frases da API ---
   useEffect(() => {
+    if (!user) return;
+
     // Buscamos tanto as categorias quanto os posts para garantir que temos todos os dados
     Promise.all([
       fetch(`${API_URL}/categorias`).then(res => res.json()),
@@ -54,9 +57,15 @@ export default function ExploreScreen() {
                   if (!grouped[catName]) {
                     grouped[catName] = [];
                   }
+
+                  const isLiked = post.likes ? post.likes.some(l => l.userId === user.id) : false;
+
                   grouped[catName].push({
+                    id: post.id,
                     text: post.description,
-                    background: catRel.background
+                    background: post.backgroundColor || catRel.background,
+                    likesCount: post.numberLikes,
+                    isLiked: isLiked
                   });
                 }
               });
@@ -69,7 +78,6 @@ export default function ExploreScreen() {
           titulo: key,
           items: grouped[key]
         }));
-
         setCategorias(dadosAdaptados);
         setIsLoading(false);
       })
@@ -77,32 +85,89 @@ export default function ExploreScreen() {
         console.error("Erro ao buscar categorias da API:", error);
         setIsLoading(false);
       });
-  }, []);
+  }, [user]);
 
-  const categoriasFiltradas = categorias.filter(cat =>
-    cat.titulo.toLowerCase().includes(searchText.toLowerCase())
+  const handleLike = async (postId) => {
+    try {
+      // Atualização Otimista
+      setCategorias(prevCats => prevCats.map(cat => ({
+        ...cat,
+        items: cat.items.map(item => {
+          if (item.id === postId) {
+            const wasLiked = item.isLiked;
+            return {
+              ...item,
+              isLiked: !wasLiked,
+              likesCount: wasLiked ? item.likesCount - 1 : item.likesCount + 1
+            };
+          }
+          return item;
+        })
+      })));
+
+      // Chamada API (assumindo endpoint de toggle ou create/delete)
+      // Como não temos o endpoint exato, vamos tentar um POST para /likes/toggle ou similar
+      // Se não existir, o usuário terá que implementar.
+      // Mas baseando no seed, existe RegistroCurtida.
+      // Vamos tentar POST /likes com { postId, userId }
+
+      const response = await fetch(`${API_URL}/likes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          postId: postId,
+          userId: user.id
+        }),
+      });
+
+      if (!response.ok) {
+        // Reverter se falhar
+        console.error("Falha ao curtir");
+        // TODO: Reverter estado
+      }
+    } catch (error) {
+      console.error("Erro ao curtir:", error);
+    }
+  };
+
+  const loadUserPhrases = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem('@user_phrases');
+      if (jsonValue != null) {
+        setUserPhrases(JSON.parse(jsonValue));
+      }
+    } catch (e) {
+      console.error("Erro ao carregar frases locais", e);
+    } finally {
+      setIsLocalLoading(false);
+    }
+  };
+
+  // Recarrega as frases do usuário sempre que a tela é focada (ex: voltando de CreatePhraseScreen)
+  useFocusEffect(
+    useCallback(() => {
+      loadUserPhrases();
+    }, [])
   );
 
+  const allContent = [
+    ...(userPhrases.length > 0 ? [{
+      titulo: "Minhas Criações 🌟",
+      items: userPhrases.map((p, index) => ({
+        id: p.id || `local-${index}`,
+        text: p.text,
+        background: p.background,
+        likesCount: 0,
+        isLiked: false
+      }))
+    }] : []),
+    ...categorias
+  ];
 
-  const renderCard = (frase, i, cat) => (
-    <TouchableOpacity
-      key={i}
-      style={[
-        styles.cardCarousel,
-        cat.isUserContent && {
-          backgroundColor: cat.userBackgrounds[i] || '#f0f0f0',
-        }
-      ]}
-    >
-      <Text style={[styles.cardText, cat.isUserContent && styles.userCardText]} numberOfLines={3}>
-        {frase}
-      </Text>
-      {cat.isUserContent && userPhrases[i]?.author && (
-        <Text style={styles.authorText}>
-          - {userPhrases[i].author}
-        </Text>
-      )}
-    </TouchableOpacity>
+  const categoriasFiltradas = allContent.filter(cat =>
+    cat.titulo.toLowerCase().includes(searchText.toLowerCase())
   );
 
 
@@ -141,6 +206,7 @@ export default function ExploreScreen() {
                 key={idx}
                 title={cat.titulo}
                 items={cat.items}
+                onLike={handleLike}
               />
             ))
           ) : (

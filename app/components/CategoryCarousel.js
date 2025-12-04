@@ -8,31 +8,31 @@ export default function CategoryCarousel({ title, items, onLike }) {
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {items.map((item, index) => (
-                    <View key={index} style={{ marginRight: 15 }}>
-                        <TouchableOpacity
-                            style={[
-                                styles.cardCarousel,
-                                { backgroundColor: item.background || "#DCE6F2" }
-                            ]}
-                        >
-                            <Text style={styles.cardText} numberOfLines={3}>
-                                {item.text}
-                            </Text>
-                        </TouchableOpacity>
+                    <View
+                        key={index}
+                        style={[
+                            styles.cardCarousel,
+                            { backgroundColor: item.background || "#DCE6F2" }
+                        ]}
+                    >
+                        <Text style={styles.cardText} numberOfLines={3}>
+                            {item.text}
+                        </Text>
 
                         {/* Área de Curtidas */}
-                        <View style={styles.likeContainer}>
-                            <TouchableOpacity onPress={() => onLike && onLike(item.id)}>
-                                <Image
-                                    source={require('../../assets/heart.png')}
-                                    style={[
-                                        styles.heartIcon,
-                                        { tintColor: item.isLiked ? "red" : "black" }
-                                    ]}
-                                />
-                            </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.likeContainer}
+                            onPress={() => onLike && onLike(item.id)}
+                        >
+                            <Image
+                                source={require('../../assets/heart.png')}
+                                style={[
+                                    styles.heartIcon,
+                                    { tintColor: item.isLiked ? "red" : "black" }
+                                ]}
+                            />
                             <Text style={styles.likeCount}>{item.likesCount || 0}</Text>
-                        </View>
+                        </TouchableOpacity>
                     </View>
                 ))}
             </ScrollView>
@@ -61,28 +61,31 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         justifyContent: "center",
         alignItems: "center",
+        marginRight: 15,
     },
     cardText: {
         fontSize: 14,
         fontStyle: "italic",
         color: "#2E3A59",
         textAlign: "center",
+        marginBottom: 20, // Espaço para o coração não ficar em cima do texto
     },
     likeContainer: {
+        position: 'absolute',
+        bottom: 10,
+        right: 10,
         flexDirection: "row",
         alignItems: "center",
-        marginTop: 5,
-        justifyContent: "flex-start",
-        paddingLeft: 5
     },
     heartIcon: {
         width: 20,
         height: 20,
-        marginRight: 5,
+        marginRight: 4,
         resizeMode: 'contain'
     },
     likeCount: {
-        fontSize: 14,
-        color: "#000",
+        fontSize: 12,
+        color: "#2E3A59",
+        fontWeight: "bold"
     }
 });
