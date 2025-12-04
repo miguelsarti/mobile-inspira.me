@@ -6,14 +6,15 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Search } from 'lucide-react';
 import Header from "../components/header/header.js";
 
 export default function ExploreScreen() {
   const [categorias, setCategorias] = useState([]);
   const [searchText, setSearchText] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch('http://localhost:5000/categories')
@@ -24,13 +25,18 @@ export default function ExploreScreen() {
           frases: cat.registrosCategorias.map(registro => registro.post.description)
         }));
         setCategorias(dadosAdaptados);
+        setIsLoading(false); 
       })
-      .catch(error => console.error(error));
+      .catch(error => {
+        console.error("Erro ao buscar categorias:", error);
+        setIsLoading(false); 
+      });
   }, []);
 
-   const categoriasFiltradas = categorias.filter(cat =>
+    const categoriasFiltradas = categorias.filter(cat =>
     cat.titulo.toLowerCase().includes(searchText.toLowerCase())
   );
+
 
   return (
     <ScrollView style={styles.container}>
@@ -49,33 +55,42 @@ export default function ExploreScreen() {
           style={{ marginRight: 6 }}
         />
         <TextInput
-          placeholder="Pesquisar"
+          placeholder="Pesquisar categorias..."
           style={styles.input}
           placeholderTextColor="#6B8EAE"
+          value={searchText} 
+          onChangeText={setSearchText} 
         />
-        <Search style={styles.searchBar} />
-          <input
-            type="text"
-            placeholder="Pesquisar categorias..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-          />
       </View>
 
-      {categorias.map((cat, idx) => (
-        <View key={idx} style={styles.categoryBlock}>
-          <Text style={styles.category}>{cat.titulo}</Text>
+      {isLoading ? (
+        <ActivityIndicator size="large" color="#6B8EAE" style={{ marginTop: 50 }} />
+      ) : (
+        <>
+          {categoriasFiltradas.length > 0 ? (
+            categoriasFiltradas.map((cat, idx) => (
+              <View key={idx} style={styles.categoryBlock}>
+                <Text style={styles.category}>{cat.titulo}</Text>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {cat.frases.map((frase, i) => (
-              <TouchableOpacity key={i} style={styles.cardCarousel}>
-                <Text style={styles.cardText}>{frase}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-        </View>
-      ))}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {cat.frases.map((frase, i) => (
+                    <TouchableOpacity key={i} style={styles.cardCarousel}>
+                      <Text style={styles.cardText} numberOfLines={3}>{frase}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            ))
+          ) : (
+            
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>
+                Nenhuma categoria encontrada para "{searchText}". 
+              </Text>
+            </View>
+          )}
+        </>
+      )}
     </ScrollView>
   );
 }
@@ -123,9 +138,6 @@ const styles = StyleSheet.create({
     color: "#2E3A59",
   },
 
-  searchBar: {
-    flex: 1,
-  },
 
   cardCarousel: {
     width: 180,
@@ -149,4 +161,10 @@ const styles = StyleSheet.create({
     color: "#2E3A59",
     textAlign: "center",
   },
+    emptyText: {
+    fontSize: 16,
+    color: '#6B8EAE',
+    textAlign: 'center',
+    fontWeight: '500',
+  }
 });
