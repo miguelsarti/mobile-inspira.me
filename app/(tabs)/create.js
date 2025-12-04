@@ -6,16 +6,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Image,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import Header from "../components/header/header.js";
 
 const { width } = Dimensions.get("window");
-const CARD_SIZE = width * 0.22;  // tamanho responsivo
-const CATEGORY_PADDING = width * 0.06;
+const CARD_SIZE = width * 0.20;
 
 export default function CreatePhraseScreen() {
   const router = useRouter();
@@ -25,18 +25,43 @@ export default function CreatePhraseScreen() {
   const [category, setCategory] = React.useState('');
   const [background, setBackground] = React.useState('#f0f0f0');
 
-  const user = {
-    name: 'Anna',
-    photoURL: 'https://via.placeholder.com/40',
-  };
+  const STORAGE_KEY = '@user_phrases';
 
-  const handlePostPhrase = () => {
-    console.log('Postando frase:', phrase);
-    console.log('Autor:', author);
-    console.log('Categoria:', category);
-    console.log('Fundo:', background);
-  };
+  const handlePostPhrase = async () => {
+    if (!phrase.trim() || !category.trim()) {
+      Alert.alert("Atenção", "Preencha a frase e selecione uma categoria para postar.");
+      return;
+    }
 
+    const newPhrase = {
+      id: Date.now(),
+      text: phrase.trim(),
+      author: author.trim() || 'Anônimo',
+      category: category,
+      background: background,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const existingPhrasesJson = await AsyncStorage.getItem(STORAGE_KEY);
+      const existingPhrases = existingPhrasesJson ? JSON.parse(existingPhrasesJson) : [];
+
+      const updatedPhrases = [newPhrase, ...existingPhrases];
+
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPhrases));
+
+      Alert.alert("Sucesso 🎉", "Sua frase foi salva localmente e pode ser acessada em outras abas.");
+      
+      setPhrase('');
+      setAuthor('');
+      setCategory('');
+      setBackground('#f0f0f0');
+
+    } catch (error) {
+      console.error("Erro ao salvar a frase no AsyncStorage:", error);
+      Alert.alert("Erro", "Não foi possível salvar a frase no dispositivo.");
+    }
+  };
   return (
     <ScrollView contentContainerStyle={styles.container}>
 
@@ -44,35 +69,39 @@ export default function CreatePhraseScreen() {
         <Header />
       </View>
 
-      {/* INPUTS */}
+            <Text style={styles.title}>Criar Nova Frase</Text>
+
       <TextInput
-        style={styles.input}
+        style={styles.inputPhrase}
         placeholder="Digite sua frase inspiradora aqui..."
         value={phrase}
         onChangeText={setPhrase}
+        multiline={true}
       />
 
       <TextInput
-        style={styles.input}
+        style={styles.inputAuthor}
         placeholder="Autor(a)"
         value={author}
         onChangeText={setAuthor}
       />
 
-      {/* FUNDO DO CARD */}
       <Text style={styles.label}>Fundo do card</Text>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel}>
+<ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel}>
         {["#f0f0f0", "#A6C8E0", "#8BB9D4", "#5D8AA8"].map((cor, i) => (
           <TouchableOpacity
             key={i}
-            style={[styles.colorOption, { backgroundColor: cor }]}
+            style={[
+              styles.colorOption,
+              { backgroundColor: cor },
+              background === cor && styles.selectedColor
+            ]}
             onPress={() => setBackground(cor)}
           />
         ))}
       </ScrollView>
 
-      {/* CATEGORIAS */}
       <Text style={styles.label}>Categorias</Text>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel}>
@@ -90,8 +119,7 @@ export default function CreatePhraseScreen() {
         ))}
       </ScrollView>
 
-      {/* BOTÕES */}
-      <View style={styles.buttonContainer}>
+<View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[styles.postButton, { backgroundColor: '#3498db' }]}
           onPress={handlePostPhrase}
@@ -117,7 +145,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
 
-  /* === HEADER === */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -127,6 +154,15 @@ const styles = StyleSheet.create({
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
+  },
+
+    title: {
+    fontSize: 24,
+    textAlign: "center",
+    marginTop: 20,
+    marginBottom: 25,
+    fontWeight: "600",
+    color: "#2E3A59",
   },
   userAvatar: {
     width: 60,
@@ -151,47 +187,63 @@ const styles = StyleSheet.create({
     padding: 8,
   },
 
-  /* === INPUTS === */
-  input: {
+inputPhrase: {
+    height: 90,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 12,
+    marginBottom: 20,
+    paddingLeft: 12,
+    paddingTop: 12,
+    fontSize: 16,
+    textAlignVertical: 'top',
+  },
+
+    inputAuthor: {
     height: 60,
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 12,
     marginBottom: 20,
-    paddingLeft: 20,
-    fontSize: 18,
+    paddingLeft: 12,
+    fontSize: 16,
   },
 
-  /* === LABELS === */
   label: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 12,
+    marginBottom: 20,
   },
 
-  /* === CARROSSEL === */
   carousel: {
-    marginBottom: 30,
+    marginBottom: 50,
   },
 
-  /* === OPÇÕES DE COR (RESPONSIVO) === */
-  colorOption: {
+colorOption: {
     width: CARD_SIZE,
     height: CARD_SIZE,
-    borderRadius: 16,
-    marginRight: 18,
+    borderRadius: 12,
+    marginRight: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
 
-  /* === CATEGORIAS === */
+  selectedColor: {
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
+
   categoryButton: {
     backgroundColor: '#f0f0f0',
-    paddingVertical: 10,
+    paddingVertical: 15,
     paddingHorizontal: 15,
     borderRadius: 30,
-    marginRight: 20,
+    marginRight: 11,
 
-    
   },
   selectedCategory: {
     backgroundColor: '#A6C8E0',
@@ -202,11 +254,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  /* === BOTÕES === */
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
+    marginTop: 106,
   },
   postButton: {
     flex: 1,

@@ -20,9 +20,6 @@ export default function HomeScreen() {
         </Text>
       </View>
 
-      <TouchableOpacity style={styles.menuButton}>
-        <Ionicons name="menu" size={28} color="#6B8EAE" />
-      </TouchableOpacity>
     </View>
   );
 }

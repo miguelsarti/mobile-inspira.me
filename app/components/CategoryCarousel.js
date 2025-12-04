@@ -1,17 +1,14 @@
 import React from "react";
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from "react-native";
 
-export default function CategoryCarousel({ title, items }) {
-    const router = useRouter();
-
+export default function CategoryCarousel({ title, items, onLike }) {
     return (
         <View style={styles.categoryBlock}>
             <Text style={styles.category}>{title}</Text>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {items.map((item, index) => (
-                    <TouchableOpacity
+                    <View
                         key={index}
                         style={[
                             styles.cardCarousel,
@@ -23,7 +20,22 @@ export default function CategoryCarousel({ title, items }) {
                         <Text style={styles.cardText} numberOfLines={3}>
                             {item.description}
                         </Text>
-                    </TouchableOpacity>
+
+                        {/* Área de Curtidas */}
+                        <TouchableOpacity
+                            style={styles.likeContainer}
+                            onPress={() => onLike && onLike(item.id)}
+                        >
+                            <Image
+                                source={require('../../assets/heart.png')}
+                                style={[
+                                    styles.heartIcon,
+                                    { tintColor: item.isLiked ? "red" : "black" }
+                                ]}
+                            />
+                            <Text style={styles.likeCount}>{item.likesCount || 0}</Text>
+                        </TouchableOpacity>
+                    </View>
                 ))}
             </ScrollView>
         </View>
@@ -58,5 +70,24 @@ const styles = StyleSheet.create({
         fontStyle: "italic",
         color: "#2E3A59",
         textAlign: "center",
+        marginBottom: 20, // Espaço para o coração não ficar em cima do texto
     },
+    likeContainer: {
+        position: 'absolute',
+        bottom: 10,
+        right: 10,
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    heartIcon: {
+        width: 20,
+        height: 20,
+        marginRight: 4,
+        resizeMode: 'contain'
+    },
+    likeCount: {
+        fontSize: 12,
+        color: "#2E3A59",
+        fontWeight: "bold"
+    }
 });
