@@ -1,19 +1,21 @@
 import React from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from "react-native";
 
-export default function CategoryCarousel({ title, items, onLike }) {
+export default function CategoryCarousel({ title, items, onLike, onPress }) {
     return (
         <View style={styles.categoryBlock}>
             <Text style={styles.category}>{title}</Text>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {items.map((item, index) => (
-                    <View
+                    <TouchableOpacity
                         key={index}
                         style={[
                             styles.cardCarousel,
                             { backgroundColor: item.background || "#DCE6F2" }
                         ]}
+                        onPress={() => onPress && onPress(item)}
+                        activeOpacity={0.9}
                     >
                         <Text style={styles.cardText} numberOfLines={3}>
                             {item.text}
@@ -33,7 +35,7 @@ export default function CategoryCarousel({ title, items, onLike }) {
                             />
                             <Text style={styles.likeCount}>{item.likesCount || 0}</Text>
                         </TouchableOpacity>
-                    </View>
+                    </TouchableOpacity>
                 ))}
             </ScrollView>
         </View>
