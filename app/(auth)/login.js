@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import { Link } from "expo-router";
+import API_URL from "../../utils/api";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -20,32 +21,47 @@ export default function LoginScreen() {
   const { signIn } = useAuth();
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Erro", "Preencha todos os campos");
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Campos obrigatórios", "Por favor, preencha email e senha.");
       return;
     }
 
     setLoading(true);
+
     try {
-      const response = await fetch('http://localhost:5000/auth/login', {
-        method: 'POST',
+      console.log(`Tentando conectar em: ${API_URL}/auth/login`);
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email: email,
+          password: password,
+        }),
       });
 
       const data = await response.json();
 
+      console.log("Resposta do servidor:", JSON.stringify(data, null, 2));
+
       if (response.ok) {
-        await signIn(email, password, data.token, data.userExistsEmail);
-        Alert.alert("Sucesso", "Login realizado com sucesso!");
+
+        const userData = {
+          ...data.userExistsEmail,
+          token: data.token
+        };
+
+        const result = await signIn(userData);
+        if (!result.success) {
+          Alert.alert("Erro no Login", result.message || "Falha ao salvar sessão.");
+        }
       } else {
-        Alert.alert("Erro", data.error || "Credenciais inválidas");
+        Alert.alert("Erro no Login", data.error || data.message || "Verifique suas credenciais.");
       }
     } catch (error) {
-      console.error('Erro ao fazer login:', error);
-      Alert.alert("Erro", "Não foi possível conectar ao servidor");
+      console.error("Erro no login:", error);
+      Alert.alert("Erro de Conexão", `Não foi possível conectar ao servidor em ${API_URL}.\nVerifique se o backend está rodando.`);
     } finally {
       setLoading(false);
     }
@@ -116,7 +132,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff", // Alterado para fundo branco
+    backgroundColor: "#fff",
   },
   content: {
     flex: 1,
@@ -124,11 +140,10 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   logoContainer: {
-    height: 60, // Altura para o espaço da logo
+    height: 60,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
-    // Você pode colocar aqui o estilo adicional para a logo
   },
   title: {
     fontSize: 32,

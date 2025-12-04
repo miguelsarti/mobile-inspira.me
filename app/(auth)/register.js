@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import { useRouter, Link } from "expo-router";
+import API_URL from "../../utils/api";
 
 export default function RegisterScreen() {
   const [name, setName] = useState("");
@@ -24,7 +25,6 @@ export default function RegisterScreen() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [bio, setBio] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signUp } = useAuth();
   const router = useRouter();
 
   const handleRegister = async () => {
@@ -51,7 +51,8 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/auth/register', {
+      console.log(`Tentando registrar em: ${API_URL}/auth/register`);
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,11 +77,11 @@ export default function RegisterScreen() {
           },
         ]);
       } else {
-        Alert.alert("Erro", data.error || "Falha ao criar conta");
+        Alert.alert("Erro", data.message || data.error || "Falha ao criar conta");
       }
     } catch (error) {
       console.error('Erro ao registrar:', error);
-      Alert.alert("Erro", "Não foi possível conectar ao servidor");
+      Alert.alert("Erro", `Não foi possível conectar ao servidor em ${API_URL}.\nVerifique se o backend está rodando.`);
     } finally {
       setLoading(false);
     }
