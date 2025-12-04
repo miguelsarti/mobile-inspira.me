@@ -8,10 +8,12 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Search } from 'lucide-react';
 import Header from "../components/header/header.js";
 
 export default function ExploreScreen() {
   const [categorias, setCategorias] = useState([]);
+  const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
     fetch('http://localhost:5000/categories')
@@ -25,6 +27,10 @@ export default function ExploreScreen() {
       })
       .catch(error => console.error(error));
   }, []);
+
+   const categoriasFiltradas = categorias.filter(cat =>
+    cat.titulo.toLowerCase().includes(searchText.toLowerCase())
+  );
 
   return (
     <ScrollView style={styles.container}>
@@ -47,6 +53,13 @@ export default function ExploreScreen() {
           style={styles.input}
           placeholderTextColor="#6B8EAE"
         />
+        <Search style={styles.searchBar} />
+          <input
+            type="text"
+            placeholder="Pesquisar categorias..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
       </View>
 
       {categorias.map((cat, idx) => (
@@ -108,6 +121,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: "#2E3A59",
+  },
+
+  searchBar: {
+    flex: 1,
   },
 
   cardCarousel: {
