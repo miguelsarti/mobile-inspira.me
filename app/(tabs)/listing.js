@@ -5,26 +5,76 @@ import {
   StyleSheet,
   TextInput,
   ScrollView,
-  TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "../components/header/header.js";
+import CategoryCarousel from "../components/CategoryCarousel";
+import API_URL from "../../utils/api";
 
 export default function ExploreScreen() {
   const [categorias, setCategorias] = useState([]);
+  const [searchText, setSearchText] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/categories')
-      .then(response => response.json())
-      .then(data => {
-        const dadosAdaptados = data.map(cat => ({
-          titulo: cat.description,
-          frases: cat.registrosCategorias.map(registro => registro.post.description)
+    // Buscamos tanto as categorias quanto os posts para garantir que temos todos os dados
+    Promise.all([
+      fetch(`${API_URL}/categorias`).then(res => res.json()),
+      fetch(`${API_URL}/posts`).then(res => res.json())
+    ])
+      .then(([categoriesData, postsData]) => {
+        // 1. Criar mapa de ID -> Nome da Categoria
+        const catIdToName = {};
+        if (Array.isArray(categoriesData)) {
+          categoriesData.forEach(cat => {
+            catIdToName[cat.id] = cat.description;
+          });
+        }
+
+        // 2. Agrupar posts por categoria
+        const grouped = {};
+
+        if (Array.isArray(postsData)) {
+          postsData.forEach(post => {
+            if (post.categories && Array.isArray(post.categories)) {
+              post.categories.forEach(catRel => {
+                // Tenta pegar o nome do relacionamento ou do mapa
+                const catId = catRel.categoryId;
+                const catName = catRel.category?.description || catIdToName[catId];
+
+                if (catName) {
+                  if (!grouped[catName]) {
+                    grouped[catName] = [];
+                  }
+                  grouped[catName].push({
+                    text: post.description,
+                    background: catRel.background
+                  });
+                }
+              });
+            }
+          });
+        }
+
+        // 3. Converter para o formato da lista
+        const dadosAdaptados = Object.keys(grouped).map(key => ({
+          titulo: key,
+          items: grouped[key]
         }));
+
         setCategorias(dadosAdaptados);
+        setIsLoading(false);
       })
-      .catch(error => console.error(error));
+      .catch(error => {
+        console.error("Erro ao buscar dados:", error);
+        setIsLoading(false);
+      });
   }, []);
+
+  const categoriasFiltradas = categorias.filter(cat =>
+    cat.titulo.toLowerCase().includes(searchText.toLowerCase())
+  );
 
   return (
     <ScrollView style={styles.container}>
@@ -43,26 +93,35 @@ export default function ExploreScreen() {
           style={{ marginRight: 6 }}
         />
         <TextInput
-          placeholder="Pesquisar"
+          placeholder="Pesquisar categorias..."
           style={styles.input}
           placeholderTextColor="#6B8EAE"
+          value={searchText}
+          onChangeText={setSearchText}
         />
       </View>
 
-      {categorias.map((cat, idx) => (
-        <View key={idx} style={styles.categoryBlock}>
-          <Text style={styles.category}>{cat.titulo}</Text>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {cat.frases.map((frase, i) => (
-              <TouchableOpacity key={i} style={styles.cardCarousel}>
-                <Text style={styles.cardText}>{frase}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-        </View>
-      ))}
+      {isLoading ? (
+        <ActivityIndicator size="large" color="#6B8EAE" style={{ marginTop: 50 }} />
+      ) : (
+        <>
+          {categoriasFiltradas.length > 0 ? (
+            categoriasFiltradas.map((cat, idx) => (
+              <CategoryCarousel
+                key={idx}
+                title={cat.titulo}
+                items={cat.items}
+              />
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>
+                Nenhuma categoria encontrada para "{searchText}".
+              </Text>
+            </View>
+          )}
+        </>
+      )}
     </ScrollView>
   );
 }
@@ -83,18 +142,6 @@ const styles = StyleSheet.create({
     color: "#2E3A59",
   },
 
-  category: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 15,
-    color: "#2E3A59",
-  },
-
-  categoryBlock: {
-    marginTop: 25,
-    marginBottom: 30,
-  },
-
   searchContainer: {
     flexDirection: "row",
     backgroundColor: "#E4EEF8",
@@ -102,6 +149,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 10,
     height: 45,
+    marginBottom: 10,
   },
 
   input: {
@@ -110,26 +158,15 @@ const styles = StyleSheet.create({
     color: "#2E3A59",
   },
 
-  cardCarousel: {
-    width: 180,
-    paddingVertical: 35,
-    backgroundColor: "#E4EEF8",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 2,
+  emptyState: {
+    marginTop: 50,
+    alignItems: 'center',
   },
 
-  cardText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#2E3A59",
-    textAlign: "center",
-  },
+  emptyText: {
+    fontSize: 16,
+    color: '#6B8EAE',
+    textAlign: 'center',
+    fontWeight: '500',
+  }
 });
