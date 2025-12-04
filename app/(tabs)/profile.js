@@ -1,69 +1,116 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
+  Image,
 } from "react-native";
-import { useAuth } from "../../contexts/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth();
+  const [selectedTab, setSelectedTab] = useState("liked");
 
-  const handleLogout = () => {
-    Alert.alert("Sair", "Tem certeza que deseja sair?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Sair",
-        style: "destructive",
-        onPress: signOut,
-      },
-    ]);
-  };
+  const likedQuotes = [
+    {
+      id: 1,
+      text: "Aquele que tem uma razão para viver pode quase tudo",
+      author: "Friedrich Nietzsche",
+    },
+    {
+      id: 2,
+      text: "Aquele que tem uma razão para viver pode quase tudo",
+      author: "Friedrich Nietzsche",
+    },
+    {
+      id: 3,
+      text: "Aquele que tem uma razão para viver pode quase tudo",
+      author: "Friedrich Nietzsche",
+    },
+  ];
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Botão Editar Perfil */}
+      <TouchableOpacity style={styles.editProfile}>
+        <Text style={styles.editProfileText}>Editar Perfil</Text>
+      </TouchableOpacity>
+
       <View style={styles.content}>
+        {/* Avatar */}
         <View style={styles.avatarContainer}>
-          <Text style={styles.avatar}>👤</Text>
+          <Image
+            source={{
+              uri: "https://i.imgur.com/7yUvePI.png",
+            }}
+            style={styles.avatar}
+          />
         </View>
 
-        <Text style={styles.name}>{user?.name}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
+        <Text style={styles.name}>Olá, Sarah</Text>
 
-        <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>ID do Usuário</Text>
-          <Text style={styles.infoValue}>{user?.id}</Text>
+        {/* Tabs */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[
+              styles.tabButton,
+              selectedTab === "posts" && styles.tabSelected,
+            ]}
+            onPress={() => setSelectedTab("posts")}
+          >
+            <Ionicons
+              name="document-text-outline"
+              size={22}
+              color={selectedTab === "posts" ? "#fff" : "#000"}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.tabButton,
+              selectedTab === "liked" && styles.tabSelected,
+            ]}
+            onPress={() => setSelectedTab("liked")}
+          >
+            <Ionicons
+              name={selectedTab === "liked" ? "heart" : "heart-outline"}
+              size={22}
+              color={selectedTab === "liked" ? "#fff" : "#000"}
+            />
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>Membro desde</Text>
-          <Text style={styles.infoValue}>
-            {user?.createdAt
-              ? new Date(user.createdAt).toLocaleDateString("pt-BR")
-              : "N/A"}
-          </Text>
-        </View>
+        {/* Título */}
+        <Text style={styles.sectionTitle}>
+          {selectedTab === "liked" ? "Frases curtidas:" : "Frases criadas:"}
+        </Text>
 
-        <View style={styles.statusCard}>
-          <Text style={styles.statusEmoji}>✅</Text>
-          <Text style={styles.statusText}>Conta Ativa</Text>
-          <Text style={styles.statusDescription}>
-            Suas credenciais estão salvas no AsyncStorage
-          </Text>
-        </View>
+        {/* Lista de cards */}
+        {likedQuotes.map((item) => (
+          <View key={item.id} style={styles.quoteCard}>
+            <Text style={styles.quoteText}>"{item.text}"</Text>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>🔒 Sair da Conta</Text>
-        </TouchableOpacity>
+            <Text style={styles.author}>— {item.author}</Text>
 
-        <View style={styles.versionCard}>
-          <Text style={styles.versionText}>
-            Versão 2.0 - Com Expo Router + AsyncStorage
-          </Text>
-        </View>
+            {/* Ícone muda de acordo com a aba selecionada */}
+            <TouchableOpacity style={styles.editButton}>
+              <Ionicons
+                name={
+                  selectedTab === "liked"
+                    ? "heart"
+                    : "document-text-outline" // <-- AQUI O ÍCONE QUE VOCÊ PEDIU
+                }
+                size={22}
+                color="#000"
+              />
+            </TouchableOpacity>
+          </View>
+        ))}
       </View>
     </ScrollView>
   );
@@ -72,114 +119,95 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  content: {
-    flex: 1,
-    alignItems: "center",
-    padding: 20,
-    paddingTop: 60,
-  },
-  avatarContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  avatar: {
-    fontSize: 50,
-  },
-  name: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
-  },
-  email: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 30,
-  },
-  infoCard: {
-    width: "100%",
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: "#ddd",
   },
-  infoLabel: {
-    fontSize: 12,
-    color: "#888",
-    marginBottom: 5,
-    textTransform: "uppercase",
+
+  editProfile: {
+    alignSelf: "flex-end",
+    margin: 20,
+  },
+  editProfileText: {
+    color: "#007AFF",
+    fontSize: 14,
     fontWeight: "600",
   },
-  infoValue: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "500",
-  },
-  statusCard: {
+
+  content: {
     width: "100%",
-    backgroundColor: "#E8F5E9",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 30,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#81C784",
   },
-  statusEmoji: {
-    fontSize: 40,
+
+  avatarContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    overflow: "hidden",
     marginBottom: 10,
   },
-  statusText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#2E7D32",
-    marginBottom: 5,
-  },
-  statusDescription: {
-    fontSize: 12,
-    color: "#388E3C",
-    textAlign: "center",
-  },
-  logoutButton: {
+  avatar: {
     width: "100%",
-    backgroundColor: "#FF3B30",
-    borderRadius: 12,
-    padding: 18,
-    alignItems: "center",
+    height: "100%",
+  },
+
+  name: {
+    fontSize: 22,
+    fontWeight: "600",
     marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
   },
-  logoutText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+
+  tabContainer: {
+    flexDirection: "row",
+    backgroundColor: "#E0E0E0",
+    borderRadius: 25,
+    padding: 4,
+    marginBottom: 30,
   },
-  versionCard: {
-    width: "100%",
-    padding: 15,
+
+  tabButton: {
+    width: 55,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
+    justifyContent: "center",
   },
-  versionText: {
-    fontSize: 12,
-    color: "#999",
+
+  tabSelected: {
+    backgroundColor: "#76A7E1",
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 15,
     textAlign: "center",
+    width: "100%",
+  },
+
+  quoteCard: {
+    width: "85%",
+    backgroundColor: "#F7F7F7",
+    padding: 18,
+    borderRadius: 12,
+    marginBottom: 15,
+    position: "relative",
+  },
+
+  quoteText: {
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 10,
+  },
+
+  author: {
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+    marginTop: 10,
+  },
+
+  editButton: {
+    position: "absolute",
+    bottom: 15,
+    right: 15,
   },
 });
