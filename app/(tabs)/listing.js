@@ -48,8 +48,12 @@ export default function ExploreScreen() {
                     grouped[catName] = [];
                   }
                   grouped[catName].push({
-                    text: post.description,
-                    background: catRel.background
+                    id: post.id,
+                    description: post.description,
+                    background: catRel.background,
+                    owner: post.ownerPost,
+                    image: post.image,
+                    categories: post.categories
                   });
                 }
               });

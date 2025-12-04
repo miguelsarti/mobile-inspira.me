@@ -1,7 +1,10 @@
 import React from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
 
 export default function CategoryCarousel({ title, items }) {
+    const router = useRouter();
+
     return (
         <View style={styles.categoryBlock}>
             <Text style={styles.category}>{title}</Text>
@@ -12,11 +15,13 @@ export default function CategoryCarousel({ title, items }) {
                         key={index}
                         style={[
                             styles.cardCarousel,
-                            { backgroundColor: item.background || "#DCE6F2" } // Usa a cor do item ou fallback
+                            { backgroundColor: item.background || "#DCE6F2" }
                         ]}
+
+                        onPress={() => router.push(`/details/${item.id}`)}
                     >
                         <Text style={styles.cardText} numberOfLines={3}>
-                            {item.text}
+                            {item.description}
                         </Text>
                     </TouchableOpacity>
                 ))}
@@ -28,7 +33,7 @@ export default function CategoryCarousel({ title, items }) {
 const styles = StyleSheet.create({
     category: {
         fontSize: 24,
-        fontFamily: "serif", // Tentando aproximar da fonte da imagem (serifada/italic)
+        fontFamily: "serif",
         fontStyle: "italic",
         fontWeight: "400",
         marginBottom: 15,
@@ -40,9 +45,9 @@ const styles = StyleSheet.create({
     },
     cardCarousel: {
         width: 150,
-        height: 150, // Quadrado conforme imagem
+        height: 150,
         padding: 15,
-        backgroundColor: "#DCE6F2", // Azul claro conforme imagem (Alegria/Motivacional)
+        backgroundColor: "#DCE6F2",
         borderRadius: 12,
         justifyContent: "center",
         alignItems: "center",
