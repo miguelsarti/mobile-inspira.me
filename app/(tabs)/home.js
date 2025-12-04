@@ -2,45 +2,58 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Dimensions, Platform } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
+import API_URL from "../../utils/api";
 
 const { width } = Dimensions.get('window');
-const ITEM_WIDTH = width * 0.4;
+const CARD_WIDTH = width * 0.85;
+const SPACING = 20;
+const SNAP_INTERVAL = CARD_WIDTH + SPACING;
 
 export default function HomeScreen() {
   const { user } = useAuth();
 
   const [quoteCards, setQuoteCards] = useState([]);
-  const [carouselItems, setCarouselItems] = useState([]);
+  const [currentPostIndex, setCurrentPostIndex] = useState(0);
+  const [categoriesData, setCategoriesData] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/posts')
+    fetch(`${API_URL}/posts`)
       .then(response => response.json())
       .then(data => setQuoteCards(data))
       .catch(error => console.error("Erro ao buscar posts:", error));
   }, []);
 
   useEffect(() => {
-    fetch('http://localhost:5000/categories')
+    fetch(`${API_URL}/categorias`)
       .then(response => response.json())
       .then(data => {
-        const formattedItems = data.map((item, index) => ({
-          key: item.id ? String(item.id) : String(index),
-          text: item.name ? item.name.toUpperCase() : "ITEM",
-          isSelected: index === 0
-        }));
-        setCarouselItems(formattedItems);
+        const items = Array.isArray(data) ? data : [];
+        setCategoriesData(items);
       })
-      .catch(error => console.error(error));
+      .catch(error => console.error("Erro ao buscar categorias:", error));
   }, []);
 
-  const renderCarouselItem = ({ text, isSelected, key }) => (
-    <TouchableOpacity
-      key={key}
-      style={[styles.carouselButton, isSelected ? styles.buttonSelected : styles.buttonLight]}
-    >
-      <Text style={styles.buttonText}>{text}</Text>
-    </TouchableOpacity>
-  );
+  const getCategoryDescription = (catRel) => {
+    if (catRel.category && catRel.category.description) {
+      return catRel.category.description;
+    }
+    if (categoriesData.length > 0 && catRel.categoryId) {
+      const cat = categoriesData.find(c => c.id === catRel.categoryId);
+      if (cat && cat.description) return cat.description;
+    }
+    return "Categoria";
+  };
+
+  const handleScroll = (event) => {
+    const x = event.nativeEvent.contentOffset.x;
+    const index = Math.round(x / SNAP_INTERVAL);
+    if (index >= 0 && index < quoteCards.length) {
+      setCurrentPostIndex(index);
+    }
+  };
+
+  const currentPost = quoteCards[currentPostIndex];
+  const currentCategories = currentPost?.categories || [];
 
   return (
     <ScrollView style={styles.container}>
@@ -61,21 +74,25 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* CARROSSEL DE FRASES */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingVertical: 20 }}
+        contentContainerStyle={{ paddingVertical: 20, paddingHorizontal: 20 }}
+        snapToInterval={SNAP_INTERVAL}
+        decelerationRate="fast"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {quoteCards.map((item, index) => (
           <View style={styles.quoteCard} key={index}>
-            <Text style={styles.quoteText}>{item.description}</Text>
-            <View style={styles.line} />
-            <Text style={styles.author}>{item.ownerPost}</Text>
-            {/* Verifica se existe imagem antes de renderizar para evitar erro */}
-            {item.image ? (
-              <Image source={{ uri: item.image }} style={styles.logo} />
-            ) : null}
+            <View style={styles.cardContent}>
+              <Text style={styles.quoteText}>{item.description}</Text>
+              <View style={styles.line} />
+              <Text style={styles.author}>{item.ownerPost}</Text>
+              {item.image ? (
+                <Image source={{ uri: item.image }} style={styles.logo} />
+              ) : null}
+            </View>
           </View>
         ))}
       </ScrollView>
@@ -89,11 +106,21 @@ export default function HomeScreen() {
           contentContainerStyle={styles.scrollViewContent}
           alwaysBounceHorizontal={true}
         >
-          {carouselItems.map(renderCarouselItem)}
+          {currentCategories.map((catRel, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.carouselButton,
+                { backgroundColor: catRel.background || '#E4EEF8' }
+              ]}
+            >
+              <Text style={[styles.buttonText, { color: '#FFF' }]}>
+                {getCategoryDescription(catRel).toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
-      </View>
-
-      <View style={{ height: 40 }} />
+      </View>      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
@@ -140,13 +167,38 @@ const styles = StyleSheet.create({
   },
 
   quoteCard: {
-    width: width * 0.75,
+    width: width * 0.85,
+    height: 380,
     backgroundColor: "#E4EEF8",
-    borderRadius: 12,
-    paddingVertical: 40,
-    paddingHorizontal: 15,
-    alignItems: "center",
+    borderRadius: 20,
+    padding: 20,
+    justifyContent: "space-between",
     marginRight: 20,
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 20,
+  },
+  postCategoriesContainer: {
+    height: 30,
+    width: '100%',
+  },
+  categoryBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4, // Diminuído conforme solicitado
+    borderRadius: 12, // Border radius ajustado
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 60,
+  },
+  categoryText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: 'bold',
   },
   quoteText: {
     fontSize: 18,
@@ -181,24 +233,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   carouselButton: {
-    width: ITEM_WIDTH,
-    paddingVertical: 35,
+    width: 110,
+    height: 110,
     marginRight: 15,
-    borderRadius: 10,
+    marginTop: 30,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    minWidth: 100,
-  },
-  buttonLight: {
-    backgroundColor: "#E4EEF8",
-  },
-  buttonSelected: {
-    backgroundColor: "#B6CCE5",
+    padding: 10,
   },
   buttonText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#2E3A59",
-    textAlign: "center",
+    fontSize: 12,
+    fontWeight: "bold",
+    textAlign: 'center',
   },
 });
