@@ -94,8 +94,9 @@ export default function ProfileScreen() {
         {likedQuotes.map((item) => (
           <View key={item.id} style={styles.quoteCard}>
             <Text style={styles.quoteText}>"{item.text}"</Text>
+            <View style={styles.line}></View>
 
-            <Text style={styles.author}>— {item.author}</Text>
+            <Text style={styles.author}>{item.author}</Text>
 
             {/* Ícone muda de acordo com a aba selecionada */}
             <TouchableOpacity style={styles.editButton}>
@@ -169,6 +170,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  line: {
+    height: 1,
+    width: 250,
+    backgroundColor: 'black',
+    display: 'flex',
+    alignSelf: 'center',
+    justifyContent: 'center'
   },
 
   tabSelected: {
