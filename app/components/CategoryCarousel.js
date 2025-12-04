@@ -1,24 +1,39 @@
 import React from "react";
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from "react-native";
 
-export default function CategoryCarousel({ title, items }) {
+export default function CategoryCarousel({ title, items, onLike }) {
     return (
         <View style={styles.categoryBlock}>
             <Text style={styles.category}>{title}</Text>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {items.map((item, index) => (
-                    <TouchableOpacity
-                        key={index}
-                        style={[
-                            styles.cardCarousel,
-                            { backgroundColor: item.background || "#DCE6F2" } // Usa a cor do item ou fallback
-                        ]}
-                    >
-                        <Text style={styles.cardText} numberOfLines={3}>
-                            {item.text}
-                        </Text>
-                    </TouchableOpacity>
+                    <View key={index} style={{ marginRight: 15 }}>
+                        <TouchableOpacity
+                            style={[
+                                styles.cardCarousel,
+                                { backgroundColor: item.background || "#DCE6F2" }
+                            ]}
+                        >
+                            <Text style={styles.cardText} numberOfLines={3}>
+                                {item.text}
+                            </Text>
+                        </TouchableOpacity>
+
+                        {/* Área de Curtidas */}
+                        <View style={styles.likeContainer}>
+                            <TouchableOpacity onPress={() => onLike && onLike(item.id)}>
+                                <Image
+                                    source={require('../../assets/heart.png')}
+                                    style={[
+                                        styles.heartIcon,
+                                        { tintColor: item.isLiked ? "red" : "black" }
+                                    ]}
+                                />
+                            </TouchableOpacity>
+                            <Text style={styles.likeCount}>{item.likesCount || 0}</Text>
+                        </View>
+                    </View>
                 ))}
             </ScrollView>
         </View>
@@ -28,7 +43,7 @@ export default function CategoryCarousel({ title, items }) {
 const styles = StyleSheet.create({
     category: {
         fontSize: 24,
-        fontFamily: "serif", // Tentando aproximar da fonte da imagem (serifada/italic)
+        fontFamily: "serif",
         fontStyle: "italic",
         fontWeight: "400",
         marginBottom: 15,
@@ -40,13 +55,12 @@ const styles = StyleSheet.create({
     },
     cardCarousel: {
         width: 150,
-        height: 150, // Quadrado conforme imagem
+        height: 150,
         padding: 15,
-        backgroundColor: "#DCE6F2", // Azul claro conforme imagem (Alegria/Motivacional)
+        backgroundColor: "#DCE6F2",
         borderRadius: 12,
         justifyContent: "center",
         alignItems: "center",
-        marginRight: 15,
     },
     cardText: {
         fontSize: 14,
@@ -54,4 +68,21 @@ const styles = StyleSheet.create({
         color: "#2E3A59",
         textAlign: "center",
     },
+    likeContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 5,
+        justifyContent: "flex-start",
+        paddingLeft: 5
+    },
+    heartIcon: {
+        width: 20,
+        height: 20,
+        marginRight: 5,
+        resizeMode: 'contain'
+    },
+    likeCount: {
+        fontSize: 14,
+        color: "#000",
+    }
 });

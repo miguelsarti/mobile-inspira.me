@@ -11,13 +11,17 @@ import { Ionicons } from "@expo/vector-icons";
 import Header from "../components/header/header.js";
 import CategoryCarousel from "../components/CategoryCarousel";
 import API_URL from "../../utils/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function ExploreScreen() {
+  const { user } = useAuth();
   const [categorias, setCategorias] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!user) return;
+
     // Buscamos tanto as categorias quanto os posts para garantir que temos todos os dados
     Promise.all([
       fetch(`${API_URL}/categorias`).then(res => res.json()),
@@ -47,9 +51,15 @@ export default function ExploreScreen() {
                   if (!grouped[catName]) {
                     grouped[catName] = [];
                   }
+
+                  const isLiked = post.likes ? post.likes.some(l => l.userId === user.id) : false;
+
                   grouped[catName].push({
+                    id: post.id,
                     text: post.description,
-                    background: catRel.background
+                    background: post.backgroundColor || catRel.background,
+                    likesCount: post.numberLikes,
+                    isLiked: isLiked
                   });
                 }
               });
@@ -70,7 +80,52 @@ export default function ExploreScreen() {
         console.error("Erro ao buscar dados:", error);
         setIsLoading(false);
       });
-  }, []);
+  }, [user]);
+
+  const handleLike = async (postId) => {
+    try {
+      // Atualização Otimista
+      setCategorias(prevCats => prevCats.map(cat => ({
+        ...cat,
+        items: cat.items.map(item => {
+          if (item.id === postId) {
+            const wasLiked = item.isLiked;
+            return {
+              ...item,
+              isLiked: !wasLiked,
+              likesCount: wasLiked ? item.likesCount - 1 : item.likesCount + 1
+            };
+          }
+          return item;
+        })
+      })));
+
+      // Chamada API (assumindo endpoint de toggle ou create/delete)
+      // Como não temos o endpoint exato, vamos tentar um POST para /likes/toggle ou similar
+      // Se não existir, o usuário terá que implementar.
+      // Mas baseando no seed, existe RegistroCurtida.
+      // Vamos tentar POST /likes com { postId, userId }
+
+      const response = await fetch(`${API_URL}/likes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          postId: postId,
+          userId: user.id
+        }),
+      });
+
+      if (!response.ok) {
+        // Reverter se falhar
+        console.error("Falha ao curtir");
+        // TODO: Reverter estado
+      }
+    } catch (error) {
+      console.error("Erro ao curtir:", error);
+    }
+  };
 
   const categoriasFiltradas = categorias.filter(cat =>
     cat.titulo.toLowerCase().includes(searchText.toLowerCase())
@@ -111,6 +166,7 @@ export default function ExploreScreen() {
                 key={idx}
                 title={cat.titulo}
                 items={cat.items}
+                onLike={handleLike}
               />
             ))
           ) : (

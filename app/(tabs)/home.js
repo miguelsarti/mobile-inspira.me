@@ -7,6 +7,7 @@ import API_URL from "../../utils/api";
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.85;
 const SPACING = 20;
+const SIDE_INSET = (width - CARD_WIDTH) / 2;
 const SNAP_INTERVAL = CARD_WIDTH + SPACING;
 
 export default function HomeScreen() {
@@ -17,11 +18,43 @@ export default function HomeScreen() {
   const [categoriesData, setCategoriesData] = useState([]);
 
   useEffect(() => {
+    if (!user) return;
+
     fetch(`${API_URL}/posts`)
       .then(response => response.json())
-      .then(data => setQuoteCards(data))
+      .then(data => {
+        const processedData = data.map(post => ({
+          ...post,
+          isLiked: post.likes ? post.likes.some(l => l.userId === user.id) : false
+        }));
+        setQuoteCards(processedData);
+      })
       .catch(error => console.error("Erro ao buscar posts:", error));
-  }, []);
+  }, [user]);
+
+  const handleLike = async (postId) => {
+    setQuoteCards(prevCards => prevCards.map(card => {
+      if (card.id === postId) {
+        const wasLiked = card.isLiked;
+        return {
+          ...card,
+          isLiked: !wasLiked,
+          numberLikes: wasLiked ? (card.numberLikes - 1) : (card.numberLikes + 1)
+        };
+      }
+      return card;
+    }));
+
+    try {
+      await fetch(`${API_URL}/likes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId, userId: user.id })
+      });
+    } catch (error) {
+      console.error("Erro ao curtir:", error);
+    }
+  };
 
   useEffect(() => {
     fetch(`${API_URL}/categorias`)
@@ -77,14 +110,21 @@ export default function HomeScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingVertical: 20, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingVertical: 20, paddingHorizontal: SIDE_INSET }}
         snapToInterval={SNAP_INTERVAL}
+        snapToAlignment="center"
         decelerationRate="fast"
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
         {quoteCards.map((item, index) => (
-          <View style={styles.quoteCard} key={index}>
+          <View
+            style={[
+              styles.quoteCard,
+              { backgroundColor: item.backgroundColor || "#E4EEF8" }
+            ]}
+            key={index}
+          >
             <View style={styles.cardContent}>
               <Text style={styles.quoteText}>{item.description}</Text>
               <View style={styles.line} />
@@ -93,6 +133,14 @@ export default function HomeScreen() {
                 <Image source={{ uri: item.image }} style={styles.logo} />
               ) : null}
             </View>
+
+            <TouchableOpacity onPress={() => handleLike(item.id)} style={styles.likeButton}>
+              <Image
+                source={require('../../assets/heart.png')}
+                style={[styles.heartIcon, { tintColor: item.isLiked ? 'red' : 'black' }]}
+              />
+              <Text style={styles.likeCount}>{item.numberLikes || 0}</Text>
+            </TouchableOpacity>
           </View>
         ))}
       </ScrollView>
@@ -174,6 +222,8 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: "space-between",
     marginRight: 20,
+    borderWidth: 1,
+    borderColor: "#000",
   },
   cardContent: {
     flex: 1,
@@ -224,6 +274,25 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     marginTop: 5,
+  },
+  likeButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 5,
+  },
+  heartIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 5,
+    resizeMode: 'contain'
+  },
+  likeCount: {
+    fontSize: 16,
+    color: "#2E3A59",
+    fontWeight: "500",
   },
 
   carouselContainer: {
