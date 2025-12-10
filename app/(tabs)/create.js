@@ -58,6 +58,18 @@ export default function CreatePhraseScreen() {
     };
   }, []);
 
+    const handleValidation = () => {
+    const nextErrors = {};
+    if (!phrase.trim()) {
+      nextErrors.phrase = true;
+    }
+    if (!selectedCategories.length) {
+      nextErrors.category = true;
+    }
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
 
   const errorMessage = async (response) => {
     try {
@@ -67,17 +79,20 @@ export default function CreatePhraseScreen() {
     }
   };
 
-  const postPhrase = async () => {
+   const postPhrase = async () => {
     const resolvedUserId = user?.id === 'number' ? user.id : Number(user?.id);
     if (!Number.isInteger(resolvedUserId)) {
       Alert.alert('Erro', 'Não foi possível identificar o usuário autenticado.');
       return;
     }
+    if (!handleValidation()) {
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const infoCreate = {
-        description: phrase,
-        ownerPost: author || user.name,
+      const payload = {
+        description: phrase.trim(),
+        ownerPost: (author.trim() || user.name),
         userId: resolvedUserId,
         backgroundColor: background,
         numberLikes: 1,
@@ -85,16 +100,47 @@ export default function CreatePhraseScreen() {
       };
       const response = await fetch(`${API_URL}/posts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(infoCreate),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       });
-      if (!response.ok) throw new Error(await errorMessage(response));
+      if (!response.ok) {
+        const message = await errorMessage(response);
+        throw new Error(message);
+      }
       const createdPost = await response.json();
       const normalizeResponse = await fetch(`${API_URL}/posts/${createdPost.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ numberLikes: 0, numberShares: 0 }),
+        headers: {
+        'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          numberLikes: 0,
+          numberShares: 0,
+        }),
       });
+      if (!normalizeResponse.ok) {
+        const message = await errorMessage(normalizeResponse);
+        throw new Error(message);
+      }
+      for (const categoryId of selectedCategories) {
+        const relationResponse = await fetch(`${API_URL}/registros-categoria`, {
+          method: 'POST',
+          headers: {
+          'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            postId: createdPost.id,
+            categoryId,
+            background,
+          }),
+        });
+        if (!relationResponse.ok) {
+          const message = await errorMessage(relationResponse);
+          throw new Error(message);
+        }
+      }
       Alert.alert('Sucesso', 'Seu post foi criado com sucesso.');
       setPhrase('');
       setAuthor('');
