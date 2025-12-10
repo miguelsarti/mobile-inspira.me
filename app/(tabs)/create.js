@@ -1,229 +1,221 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Dimensions,
-  Alert,
-  ActivityIndicator,
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import Header from "../components/header/header.js";
+import Header from '../components/header/header';
 import { useAuth } from '../../contexts/AuthContext';
+import API_URL from '../../utils/api';
 
-const { width } = Dimensions.get("window");
-const CARD_SIZE = width * 0.20;
-const API_URL = "http://localhost:5000";
-
+const palette = ['#f0f0f0', '#A6C8E0', '#8BB9D4', '#5D8AA8'];
 
 export default function CreatePhraseScreen() {
   const router = useRouter();
-  // Assume que useAuth fornece o objeto 'user' com 'id' e 'name'
-  const { user } = useAuth(); 
+  const { user } = useAuth();
+  const [phrase, setPhrase] = useState('');
+  const [author, setAuthor] = useState('');
+  const [background, setBackground] = useState(palette[0]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [isFetchingCategories, setIsFetchingCategories] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  const [phrase, setPhrase] = React.useState('');
-  const [author, setAuthor] = React.useState('');
-  const [category, setCategory] = React.useState('');
-  const [background, setBackground] = React.useState('#f0f0f0');
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [validationError, setValidationError] = React.useState(false); // Novo estado
+  useEffect(() => {
+    const categories = true;
+    const loadCategories = async () => {
+      setIsFetchingCategories(true);
+      try {
+        const response = await fetch(`${API_URL}/categorias`);
+        if (!response.ok) {
+          throw new Error();
+        }
+        const data = await response.json();
+        if (!categories) {
+          return;
+        }
+        const list = Array.isArray(data) ? data : [];
+        setCategories(list);
+        setSelectedCategories((find) => {
+          const validfind = find.filter((id) => list.some((category) => category.id === id));
+          if (validfind.length) {
+            return validfind;
+          }
+          return list[0]?.id ? [list[0].id] : [];
+        });
+      } catch (error) {
+        if (categories) {
+          Alert.alert('Erro', 'Não foi possível carregar as categorias.');
+        }
+      } finally {
+        if (categories) {
+          setIsFetchingCategories(false);
+        }
+      }
+    };
+    loadCategories();
+    return () => {
+      categories = false;
+    };
+  }, []);
 
-  // Mapeamento de Cores e Categorias para o ScrollView
-  const colors = ["#f0f0f0", "#A6C8E0", "#8BB9D4", "#5D8AA8"];
-  const categories = ["AMOR", "FAMÍLIA", "AMIZADE", "MOTIVAÇÃO"];
 
-  const createPostOnBackend = async (postData) => {
+  const errorMessage = async (response) => {
     try {
+      return (await response.json()).message || 'Erro inesperado.';
+    } catch {
+      return 'Erro inesperado.';
+    }
+  };
+
+  const postPhrase = async () => {
+    const resolvedUserId = user?.id === 'number' ? user.id : Number(user?.id);
+    if (!Number.isInteger(resolvedUserId)) {
+      Alert.alert('Erro', 'Não foi possível identificar o usuário autenticado.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const infoCreate = {
+        description: phrase,
+        ownerPost: author || user.name,
+        userId: resolvedUserId,
+        backgroundColor: background,
+        numberLikes: 1,
+        numberShares: 1,
+      };
       const response = await fetch(`${API_URL}/posts`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(postData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(infoCreate),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = 'Erro ao criar post no servidor';
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          errorMessage = errorText;
-        }
-        throw new Error(errorMessage);
-      }
-
+      if (!response.ok) throw new Error(await errorMessage(response));
       const createdPost = await response.json();
-      return createdPost;
-    } catch (error) {
-      console.error('Erro ao criar post:', error);
-      throw error;
-    }
-  };
-  const handlePostPhrase = async () => {
-    // 1. Validação de campos
-    if (!phrase.trim() || !category.trim()) {
-      Alert.alert("Atenção", "Preencha a frase e selecione uma categoria para postar.");
-      setValidationError(true); // Ativa o feedback visual
-      return;
-    }
-    setValidationError(false); // Desativa se a validação passar
-
-    // 2. Validação de Autenticação
-    if (!user || !user.id) {
-      Alert.alert("Erro", "Você precisa estar autenticado para postar.");
-      return;
-    }
-
-    setIsLoading(true);
-
-    // 3. Montar o objeto Postagem para envio
-    const newPost = {
-      // O nome do campo `description` é do seu modelo Postagem
-      description: phrase.trim(),
-      // `ownerPost` é o nome do autor (o nome do usuário ou o nome que ele digitar)
-      ownerPost: author.trim() || user.name || 'Anônimo', 
-      // `userId` é obrigatório para o relacionamento
-      userId: user.id, 
-      backgroundColor: background,
-      // O back-end precisará saber qual categoria buscar/criar
-      categories: [category], 
-      numberLikes: 0,
-      numberShares: 0,
-    };
-    
-    try {
-      // 4. Enviar para o Back-end
-      const createdPost = await createPostOnBackend(newPost);
-      
-      // 5. Sucesso e Limpeza
-      Alert.alert("Sucesso 🎉", "Seu post foi criado com sucesso!");
-      
+      const normalizeResponse = await fetch(`${API_URL}/posts/${createdPost.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ numberLikes: 0, numberShares: 0 }),
+      });
+      Alert.alert('Sucesso', 'Seu post foi criado com sucesso.');
       setPhrase('');
       setAuthor('');
-      setCategory('');
-      setBackground('#f0f0f0');
-
-      // Redirecionar para a home após sucesso
+      setBackground(palette[0]);
+      setSelectedCategories((categories[0]?.id ? [categories[0].id] : []));
+      setErrors({});
       router.replace('/(tabs)/home');
     } catch (error) {
-      // 6. Tratamento de Erro
-      console.error("Erro ao postar:", error);
-      Alert.alert("Erro", error.message || "Não foi possível criar o post. Tente novamente.");
+      Alert.alert('Erro', error.message || 'Não foi possível criar o post.');
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
-  
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-
-      <View style={{ marginTop: 25 }}>
         <Header />
-      </View>
 
       <Text style={styles.title}>Criar Nova Frase</Text>
-
       <TextInput
-        style={[
-            styles.inputPhrase,
-            validationError && !phrase.trim() && { borderColor: 'red', borderWidth: 2 } // Feedback de erro
-        ]}
+        style={[styles.inputPhrase, errors.phrase && styles.inputError]}
         placeholder="Digite sua frase inspiradora aqui..."
         value={phrase}
         onChangeText={setPhrase}
-        multiline={true}
-        autoCorrect={true}
       />
-
       <TextInput
         style={styles.inputAuthor}
         placeholder="Autor(a) (Opcional)"
         value={author}
         onChangeText={setAuthor}
       />
-
       <Text style={styles.label}>Fundo do card</Text>
-
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel}>
-        {colors.map((cor, i) => (
+        {palette.map((color) => (
           <TouchableOpacity
-            key={i}
+            key={color}
             style={[
               styles.colorOption,
-              { backgroundColor: cor },
-              background === cor && styles.selectedColor
+              { backgroundColor: color },
+              background === color && styles.selectedColor,
             ]}
-            onPress={() => setBackground(cor)}
+            onPress={() => setBackground(color)}
+            disabled={isSubmitting}
           />
         ))}
       </ScrollView>
-
       <Text style={styles.label}>Categorias</Text>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel}>
-        {categories.map((cat) => (
-          <TouchableOpacity
-            key={cat}
-            style={[
-              styles.categoryButton,
-              category === cat ? styles.selectedCategory : 
-              validationError && !category.trim() && { borderColor: 'red', borderWidth: 2 } // Feedback de erro
-            ]}
-            onPress={() => setCategory(cat)}
-          >
-            <Text style={category === cat ? styles.selectedCategoryText : styles.categoryText}>{cat}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
+      {isFetchingCategories ? (
+        <View style={styles.loadingCategories}>
+          <ActivityIndicator size="small" color="#3498db" />
+          <Text style={styles.loadingText}>Carregando categorias...</Text>
+        </View>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel}>
+          {categories.map((category) => {
+            const isSelected = selectedCategories.includes(category.id);
+            return (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.categoryButton,
+                  isSelected && styles.selectedCategory,
+                  errors.category && styles.inputErrorBorder,
+                ]}
+                onPress={() => {
+                  setErrors((find) => ({ ...find, category: false }));
+                  setSelectedCategories((find) =>
+                    find.includes(category.id)
+                      ? find.filter((id) => id !== category.id)
+                      : [...find, category.id]
+                  );
+                }}
+                disabled={isSubmitting}
+              >
+                <Text style={isSelected ? styles.selectedCategoryText : styles.categoryText}>
+                  {category.description.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[styles.postButton, { backgroundColor: '#3498db' }]}
-          onPress={handlePostPhrase}
-          disabled={isLoading}
+          onPress={postPhrase}
+          disabled={isSubmitting || isFetchingCategories}
         >
-          {isLoading ? (
+          {isSubmitting ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <Text style={styles.buttonText}>Postar Frase</Text>
           )}
         </TouchableOpacity>
-
         <TouchableOpacity
           style={[styles.postButton, { backgroundColor: '#ccc' }]}
           onPress={() => router.back()}
-          disabled={isLoading}
+          disabled={isSubmitting}
         >
           <Text style={styles.buttonText}>Cancelar</Text>
         </TouchableOpacity>
       </View>
-
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  // ... (Seus estilos existentes)
   container: {
     padding: 20,
     backgroundColor: '#fff',
-    minHeight: Dimensions.get('window').height, // Garante que a tela preenche o mínimo
   },
   title: {
     fontSize: 24,
-    textAlign: "center",
+    textAlign: 'center',
     marginTop: 20,
     marginBottom: 25,
-    fontWeight: "600",
-    color: "#2E3A59",
+    fontWeight: '600',
+    color: '#2E3A59',
   },
   inputPhrase: {
-    height: 90,
+    height: 120,
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 12,
@@ -232,6 +224,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     fontSize: 16,
     textAlignVertical: 'top',
+    textAlign: 'center',
   },
   inputAuthor: {
     height: 60,
@@ -241,19 +234,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingLeft: 12,
     fontSize: 16,
+    textAlign: 'center',
   },
   label: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
     marginBottom: 20,
+    textAlign: 'center',
   },
   carousel: {
-    marginBottom: 50,
+    marginBottom: 40,
   },
   colorOption: {
-    width: CARD_SIZE,
-    height: CARD_SIZE,
+    width: 100,
+    height: 100,
     borderRadius: 12,
     marginRight: 15,
     elevation: 3,
@@ -263,35 +258,40 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   selectedColor: {
-    borderWidth: 3, // Aumentei para melhor visualização
+    borderWidth: 3,
     borderColor: '#000000',
   },
   categoryButton: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#FCF8EC',
     paddingVertical: 15,
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
     borderRadius: 30,
     marginRight: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 120,
   },
   selectedCategory: {
-    backgroundColor: '#3498db', // Cor mais contrastante para seleção
+    backgroundColor: '#3498db',
     borderWidth: 1,
     borderColor: '#3498db',
   },
   categoryText: {
     fontSize: 14,
     color: '#333',
-    fontWeight: "600",
+    fontWeight: '600',
+    textAlign: 'center',
   },
-  selectedCategoryText: { // Novo estilo para o texto da categoria selecionada
+  selectedCategoryText: {
     fontSize: 14,
     color: '#fff',
-    fontWeight: "600",
+    fontWeight: '600',
+    textAlign: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 106,
+    marginTop: 60,
   },
   postButton: {
     flex: 1,
@@ -305,4 +305,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
   },
-}); 
+  inputError: {
+    borderColor: '#e74c3c',
+    borderWidth: 2,
+  },
+  inputErrorBorder: {
+    borderColor: '#e74c3c',
+    borderWidth: 2,
+  },
+  loadingCategories: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  loadingText: {
+    marginLeft: 10,
+    color: '#2E3A59',
+  },
+});
