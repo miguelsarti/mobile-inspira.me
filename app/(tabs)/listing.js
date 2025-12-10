@@ -1,17 +1,16 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from 'expo-router'; // Para recarregar dados quando a tela é focada
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Importar AsyncStorage
-import Header from "../components/header/header.js";
+import { useFocusEffect, useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Header from "../components/header/header";
 import CategoryCarousel from "../components/CategoryCarousel";
 import API_URL from "../../utils/api";
 import { useAuth } from "../../contexts/AuthContext";
@@ -19,167 +18,165 @@ import { useAuth } from "../../contexts/AuthContext";
 export default function ExploreScreen() {
   const { user } = useAuth();
   const router = useRouter();
-  const [categorias, setCategorias] = useState([]);
-  const [userPhrases, setUserPhrases] = useState([]); // Novo estado para frases do usuário
-  const [searchText, setSearchText] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLocalLoading, setIsLocalLoading] = useState(true); // Estado para carregamento local
 
-  // --- Função para carregar frases da API ---
+  const idUsuario = Number(user?.id) || null;
+
+  const [listaCategorias, setListaCategorias] = useState([]);
+  const [frasesUsuario, setFrasesUsuario] = useState([]);
+  const [textoPesquisa, setTextoPesquisa] = useState("");
+
+  const [carregandoApi, setCarregandoApi] = useState(true);
+  const [carregandoLocal, setCarregandoLocal] = useState(true);
+
   useEffect(() => {
-    if (!user) return;
+    if (!idUsuario) return;
 
-    // Buscamos tanto as categorias quanto os posts para garantir que temos todos os dados
-    Promise.all([
-      fetch(`${API_URL}/categorias`).then(res => res.json()),
-      fetch(`${API_URL}/posts`).then(res => res.json())
-    ])
-      .then(([categoriesData, postsData]) => {
-        // 1. Criar mapa de ID -> Nome da Categoria
-        const catIdToName = {};
-        if (Array.isArray(categoriesData)) {
-          categoriesData.forEach(cat => {
-            catIdToName[cat.id] = cat.description;
+    async function carregarDadosApi() {
+      try {
+        const [resCategorias, resPosts] = await Promise.all([
+          fetch(`${API_URL}/categorias`).then((r) => r.json()),
+          fetch(`${API_URL}/posts`).then((r) => r.json()),
+        ]);
+
+        const mapaCategorias = {};
+        resCategorias?.forEach((c) => (mapaCategorias[c.id] = c.description));
+
+        const agrupado = {};
+
+        resPosts?.forEach((post) => {
+          post.categories?.forEach((catRel) => {
+            const idCat = catRel.categoryId;
+            const nomeCat =
+              catRel.category?.description || mapaCategorias[idCat];
+
+            if (!nomeCat) return;
+
+            if (!agrupado[nomeCat]) agrupado[nomeCat] = [];
+
+            const listaCurtidas = Array.isArray(post.likes) ? post.likes : [];
+            const curtidaUsuario = listaCurtidas.find(
+              (l) => Number(l.userId) === idUsuario
+            );
+
+            const fundo =
+              post.backgroundColor || catRel.background || "#E4EEF8";
+
+            agrupado[nomeCat].push({
+              id: post.id,
+              texto: post.description,
+              fundo,
+              totalCurtidas:
+                listaCurtidas.length > 0
+                  ? listaCurtidas.length
+                  : post.numberLikes || 0,
+              curtido: Boolean(curtidaUsuario),
+              idCurtida: curtidaUsuario?.id || null,
+            });
           });
-        }
+        });
 
-        // 2. Agrupar posts por categoria
-        const grouped = {};
-
-        if (Array.isArray(postsData)) {
-          postsData.forEach(post => {
-            if (post.categories && Array.isArray(post.categories)) {
-              post.categories.forEach(catRel => {
-                // Tenta pegar o nome do relacionamento ou do mapa
-                const catId = catRel.categoryId;
-                const catName = catRel.category?.description || catIdToName[catId];
-
-                if (catName) {
-                  if (!grouped[catName]) {
-                    grouped[catName] = [];
-                  }
-
-                  const isLiked = post.likes ? post.likes.some(l => l.userId === user.id) : false;
-
-                  const backgroundColor = post.backgroundColor || catRel.background || '#E4EEF8';
-
-                  grouped[catName].push({
-                    id: post.id,
-                    text: post.description,
-                    backgroundColor,
-                    likesCount: post.numberLikes,
-                    isLiked: isLiked
-                  });
-                }
-              });
-            }
-          });
-        }
-
-        // 3. Converter para o formato da lista
-        const dadosAdaptados = Object.keys(grouped).map(key => ({
-          titulo: key,
-          items: grouped[key]
+        const dadosFinal = Object.keys(agrupado).map((nome) => ({
+          titulo: nome,
+          itens: agrupado[nome],
         }));
-        setCategorias(dadosAdaptados);
-        setIsLoading(false);
-      })
-      .catch(error => {
-        console.error("Erro ao buscar categorias da API:", error);
-        setIsLoading(false);
-      });
-  }, [user]);
 
-  const handleLike = async (postId) => {
+        setListaCategorias(dadosFinal);
+      } catch (err) {
+        console.log("Erro API:", err);
+      }
+
+      setCarregandoApi(false);
+    }
+
+    carregarDadosApi();
+  }, [idUsuario]);
+
+  const curtirItem = async (item) => {
+    if (!idUsuario) return;
+
+    const estavaCurtido = item.curtido;
+
     try {
-      // Atualização Otimista
-      setCategorias(prevCats => prevCats.map(cat => ({
-        ...cat,
-        items: cat.items.map(item => {
-          if (item.id === postId) {
-            const wasLiked = item.isLiked;
+      let novoIdCurtida = item.idCurtida;
+
+      if (estavaCurtido && item.idCurtida) {
+        await fetch(`${API_URL}/registros-curtida/${item.idCurtida}`, {
+          method: "DELETE",
+        });
+        novoIdCurtida = null;
+      } else {
+        const resposta = await fetch(`${API_URL}/registros-curtida`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ postId: item.id, userId: idUsuario }),
+        });
+
+        const criado = await resposta.json();
+        novoIdCurtida = criado.id;
+      }
+
+      setListaCategorias((prev) =>
+        prev.map((cat) => ({
+          ...cat,
+          itens: cat.itens.map((card) => {
+            if (card.id !== item.id) return card;
+
             return {
-              ...item,
-              isLiked: !wasLiked,
-              likesCount: wasLiked ? item.likesCount - 1 : item.likesCount + 1
+              ...card,
+              curtido: !estavaCurtido,
+              totalCurtidas: card.totalCurtidas + (estavaCurtido ? -1 : 1),
+              idCurtida: novoIdCurtida,
             };
-          }
-          return item;
-        })
-      })));
-
-      // Chamada API (assumindo endpoint de toggle ou create/delete)
-      // Como não temos o endpoint exato, vamos tentar um POST para /likes/toggle ou similar
-      // Se não existir, o usuário terá que implementar.
-      // Mas baseando no seed, existe RegistroCurtida.
-      // Vamos tentar POST /likes com { postId, userId }
-
-      const response = await fetch(`${API_URL}/likes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          postId: postId,
-          userId: user.id
-        }),
-      });
-
-      if (!response.ok) {
-        // Reverter se falhar
-        console.error("Falha ao curtir");
-        // TODO: Reverter estado
-      }
-    } catch (error) {
-      console.error("Erro ao curtir:", error);
+          }),
+        }))
+      );
+    } catch (err) {
+      console.log("Erro curtida:", err);
     }
   };
 
-  const loadUserPhrases = async () => {
+  async function carregarFrasesLocal() {
     try {
-      const jsonValue = await AsyncStorage.getItem('@user_phrases');
-      if (jsonValue != null) {
-        setUserPhrases(JSON.parse(jsonValue));
-      }
-    } catch (e) {
-      console.error("Erro ao carregar frases locais", e);
-    } finally {
-      setIsLocalLoading(false);
-    }
-  };
+      const jsonValue = await AsyncStorage.getItem("@user_phrases");
+      if (jsonValue) setFrasesUsuario(JSON.parse(jsonValue));
+    } catch {}
+    setCarregandoLocal(false);
+  }
 
-  // Recarrega as frases do usuário sempre que a tela é focada (ex: voltando de CreatePhraseScreen)
   useFocusEffect(
-    useCallback(() => {
-      loadUserPhrases();
+    React.useCallback(() => {
+      carregarFrasesLocal();
     }, [])
   );
 
-  const allContent = [
-    ...(userPhrases.length > 0 ? [{
-      titulo: "Minhas Criações 🌟",
-      items: userPhrases.map((p, index) => ({
-        id: p.id || `local-${index}`,
-        text: p.text,
-        backgroundColor: p.backgroundColor || p.background,
-        likesCount: 0,
-        isLiked: false
-      }))
-    }] : []),
-    ...categorias
+  const conteudoCompleto = [
+    ...(frasesUsuario.length > 0
+      ? [
+          {
+            titulo: "Minhas Criações 🌟",
+            itens: frasesUsuario.map((p, index) => ({
+              id: p.id || `local-${index}`,
+              texto: p.text,
+              fundo: p.backgroundColor || "#E4EEF8",
+              totalCurtidas: 0,
+              curtido: false,
+            })),
+          },
+        ]
+      : []),
+    ...listaCategorias,
   ];
 
-  const categoriasFiltradas = allContent.filter(cat =>
-    cat.titulo.toLowerCase().includes(searchText.toLowerCase())
+  const categoriasFiltradas = conteudoCompleto.filter((cat) =>
+    cat.titulo.toLowerCase().includes(textoPesquisa.toLowerCase())
   );
 
-  const handlePostPress = (item) => {
+  const abrirDetalhes = (item) => {
     router.push(`/details/${item.id}`);
   };
 
   return (
     <ScrollView style={styles.container}>
-
       <View style={{ marginTop: 25 }}>
         <Header />
       </View>
@@ -187,41 +184,38 @@ export default function ExploreScreen() {
       <Text style={styles.title}>Explorar</Text>
 
       <View style={styles.searchContainer}>
-        <Ionicons
-          name="search"
-          size={18}
-          color="#6B8EAE"
-          style={{ marginRight: 6 }}
-        />
+        <Ionicons name="search" size={18} color="#6B8EAE" />
         <TextInput
           placeholder="Pesquisar categorias..."
           style={styles.input}
           placeholderTextColor="#6B8EAE"
-          value={searchText}
-          onChangeText={setSearchText}
+          value={textoPesquisa}
+          onChangeText={setTextoPesquisa}
         />
       </View>
 
-      {(isLoading || isLocalLoading) ? (
-        <ActivityIndicator size="large" color="#6B8EAE" style={{ marginTop: 50 }} />
+      {carregandoApi || carregandoLocal ? (
+        <ActivityIndicator
+          size="large"
+          color="#6B8EAE"
+          style={{ marginTop: 50 }}
+        />
+      ) : categoriasFiltradas.length > 0 ? (
+        categoriasFiltradas.map((cat, index) => (
+          <CategoryCarousel
+            key={index}
+            title={cat.titulo}
+            items={cat.itens}
+            onLike={curtirItem}
+            onPress={abrirDetalhes}
+          />
+        ))
       ) : (
-        <>
-          {categoriasFiltradas.length > 0 ? (
-            categoriasFiltradas.map((cat, idx) => (
-              <CategoryCarousel
-                key={idx}
-                title={cat.titulo}
-                items={cat.items}
-                onLike={handleLike}
-                onPress={handlePostPress}
-              />
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Nenhuma categoria ou criação encontrada para "{searchText}". </Text>
-            </View>
-          )}
-        </>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>
+            Nada encontrado para "{textoPesquisa}".
+          </Text>
+        </View>
       )}
     </ScrollView>
   );
@@ -233,7 +227,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
   },
-
   title: {
     fontSize: 18,
     textAlign: "center",
@@ -242,19 +235,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#2E3A59",
   },
-
-  category: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 15,
-    color: "#2E3A59",
-  },
-
-  categoryBlock: {
-    marginTop: 25,
-    marginBottom: 30,
-  },
-
   searchContainer: {
     flexDirection: "row",
     backgroundColor: "#E4EEF8",
@@ -264,52 +244,18 @@ const styles = StyleSheet.create({
     height: 45,
     marginBottom: 10,
   },
-
   input: {
     flex: 1,
     fontSize: 14,
     color: "#2E3A59",
+    marginLeft: 6,
   },
-
-
-  cardCarousel: {
-    width: 180,
-    paddingHorizontal: 10,
-    paddingVertical: 35,
-    backgroundColor: "#E4EEF8",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 2,
-  },
-
-  cardText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#2E3A59",
-    textAlign: "center",
-  },
-
-  userCardText: {
-    color: '#333', // Talvez mude a cor para contraste em fundos coloridos
-    marginBottom: 5,
-  },
-  authorText: {
-    fontSize: 12,
-    color: '#333',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginTop: 5,
+  emptyState: {
+    padding: 30,
   },
   emptyText: {
     fontSize: 16,
-    color: '#6B8EAE',
-    textAlign: 'center',
-    fontWeight: '500',
-  }
+    textAlign: "center",
+    color: "#6B8EAE",
+  },
 });
