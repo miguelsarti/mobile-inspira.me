@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -22,6 +23,8 @@ export default function ProfileScreen() {
   const [likedQuotes, setLikedQuotes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [postPendingDelete, setPostPendingDelete] = useState(null);
 
   const userId = Number(user?.id) || null;
 
@@ -209,20 +212,24 @@ export default function ProfileScreen() {
     }
   };
 
+  const closeDeleteModal = () => {
+    setIsDeleteModalVisible(false);
+    setPostPendingDelete(null);
+  };
+
   const confirmDeletePost = (post) => {
     if (!post?.id) return;
-    Alert.alert(
-      "Excluir postagem",
-      "Deseja realmente excluir esta frase?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: () => handleDeletePost(Number(post.id)),
-        },
-      ]
-    );
+    setPostPendingDelete(post);
+    setIsDeleteModalVisible(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!postPendingDelete?.id) {
+      closeDeleteModal();
+      return;
+    }
+    await handleDeletePost(Number(postPendingDelete.id));
+    closeDeleteModal();
   };
 
   const handleEditPostNavigation = (post) => {
@@ -301,11 +308,12 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: 60 }}
-      showsVerticalScrollIndicator={false}
-    >
+    <>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 60 }}
+        showsVerticalScrollIndicator={false}
+      >
       <TouchableOpacity
         style={styles.editProfile}
         onPress={() => router.push("/editProfile")}
@@ -362,11 +370,39 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
-        <Ionicons name="log-out-outline" size={20} color="#fff" />
-        <Text style={styles.logoutText}>Sair</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
+          <Ionicons name="log-out-outline" size={20} color="#fff" />
+          <Text style={styles.logoutText}>Sair</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={isDeleteModalVisible}
+        onRequestClose={closeDeleteModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Excluir postagem</Text>
+            <Text style={styles.modalMessage}>
+              Deseja realmente excluir esta frase?
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalButton} onPress={closeDeleteModal}>
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalDeleteButton]}
+                onPress={handleConfirmDelete}
+              >
+                <Text style={styles.modalDeleteText}>Excluir</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -514,5 +550,64 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 24,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2E3A59",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: "#5B6E85",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    columnGap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    alignItems: "center",
+  },
+  modalDeleteButton: {
+    backgroundColor: "#E53935",
+    borderColor: "#E53935",
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#2E3A59",
+  },
+  modalDeleteText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#fff",
   },
 });
