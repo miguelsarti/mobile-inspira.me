@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Dimensions, Platform } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import API_URL from "../../utils/api";
@@ -11,45 +11,91 @@ const SNAP_INTERVAL = CARD_WIDTH + SPACING;
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const normalizedUserId = useMemo(() => {
+    if (typeof user?.id === "number") {
+      return user.id;
+    }
+    const parsed = Number(user?.id);
+    return Number.isNaN(parsed) ? null : parsed;
+  }, [user?.id]);
 
   const [quoteCards, setQuoteCards] = useState([]);
   const [currentPostIndex, setCurrentPostIndex] = useState(0);
   const [categoriesData, setCategoriesData] = useState([]);
 
-  useEffect(() => {
-    if (!user) return;
-
+  const fetchPosts = useCallback(() => {
+    if (!normalizedUserId) return;
     fetch(`${API_URL}/posts`)
       .then(response => response.json())
       .then(data => {
-        const processedData = data.map(post => ({
-          ...post,
-          isLiked: post.likes ? post.likes.some(l => l.userId === user.id) : false
-        }));
+        const processedData = data.map(post => {
+          const likesArray = Array.isArray(post.likes) ? post.likes : [];
+          const userLike = likesArray.find(l => Number(l.userId) === normalizedUserId);
+          const likeCount = likesArray.length > 0 ? likesArray.length : (post.numberLikes ?? 0);
+          return {
+            ...post,
+            likes: likesArray,
+            numberLikes: likeCount,
+            isLiked: Boolean(userLike),
+            userLikeId: userLike?.id ?? null,
+          };
+        });
         setQuoteCards(processedData);
       })
       .catch(error => console.error("Erro ao buscar posts:", error));
-  }, [user]);
+  }, [normalizedUserId]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   const handleLike = async (postId) => {
-    setQuoteCards(prevCards => prevCards.map(card => {
-      if (card.id === postId) {
-        const wasLiked = card.isLiked;
+    if (!normalizedUserId) return;
+    const targetCard = quoteCards.find(card => card.id === postId);
+    if (!targetCard) return;
+    const existingLikeId = targetCard.userLikeId
+      || targetCard.likes?.find(like => Number(like.userId) === normalizedUserId)?.id;
+
+    const updateCardState = (isLiked, newLikeId, delta) => {
+      setQuoteCards(prevCards => prevCards.map(card => {
+        if (card.id !== postId) return card;
+        const likesArray = Array.isArray(card.likes) ? card.likes : [];
+        const filteredLikes = likesArray.filter(like => Number(like.userId) !== normalizedUserId);
+        const updatedLikes = isLiked
+          ? [...filteredLikes, { id: newLikeId, userId: normalizedUserId }]
+          : filteredLikes;
+        const currentCount = typeof card.numberLikes === "number"
+          ? card.numberLikes
+          : likesArray.length;
         return {
           ...card,
-          isLiked: !wasLiked,
-          numberLikes: wasLiked ? (card.numberLikes - 1) : (card.numberLikes + 1)
+          isLiked,
+          userLikeId: newLikeId,
+          likes: updatedLikes,
+          numberLikes: Math.max(0, currentCount + delta),
         };
-      }
-      return card;
-    }));
+      }));
+    };
 
     try {
-      await fetch(`${API_URL}/likes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId, userId: user.id })
-      });
+      if (existingLikeId) {
+        await fetch(`${API_URL}/registros-curtida/${existingLikeId}`, {
+          method: 'DELETE',
+        });
+        updateCardState(false, null, -1);
+      } else {
+        const response = await fetch(`${API_URL}/registros-curtida`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postId, userId: normalizedUserId }),
+        });
+        if (!response.ok) {
+          throw new Error('Não foi possível registrar a curtida.');
+        }
+        const createdLike = await response.json();
+        updateCardState(true, createdLike?.id ?? null, 1);
+      }
+      fetchPosts();
     } catch (error) {
       console.error("Erro ao curtir:", error);
     }
@@ -94,7 +140,7 @@ export default function HomeScreen() {
         <View style={styles.headerLeft}>
           <View style={styles.userAvatar}>
             <Image
-              source={{ uri: user?.photoURL || "https://via.placeholder.com/40" }}
+              source={user?.avatarUrl ? { uri: user.avatarUrl } : require("../../assets/profile.png")}
               style={styles.avatarImage}
             />
           </View>
@@ -161,7 +207,9 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
-      </View>      <View style={{ height: 40 }} />
+      </View>
+
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
@@ -228,8 +276,8 @@ const styles = StyleSheet.create({
   },
   categoryBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 4, // Diminuído conforme solicitado
-    borderRadius: 12, // Border radius ajustado
+    paddingVertical: 4,
+    borderRadius: 12,
     marginRight: 8,
     justifyContent: 'center',
     alignItems: 'center',

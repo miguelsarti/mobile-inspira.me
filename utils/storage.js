@@ -5,7 +5,6 @@ const STORAGE_KEYS = {
   USERS_DB: "@rotas_privadas:users_db",
 };
 
-// Salvar usuário logado
 export const saveUser = async (user) => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
@@ -16,7 +15,6 @@ export const saveUser = async (user) => {
   }
 };
 
-// Obter usuário logado
 export const getUser = async () => {
   try {
     const user = await AsyncStorage.getItem(STORAGE_KEYS.USER);
@@ -27,7 +25,6 @@ export const getUser = async () => {
   }
 };
 
-// Remover usuário logado (logout)
 export const removeUser = async () => {
   try {
     await AsyncStorage.removeItem(STORAGE_KEYS.USER);
@@ -38,7 +35,6 @@ export const removeUser = async () => {
   }
 };
 
-// Obter todos os usuários cadastrados
 export const getAllUsers = async () => {
   try {
     const users = await AsyncStorage.getItem(STORAGE_KEYS.USERS_DB);
@@ -49,18 +45,13 @@ export const getAllUsers = async () => {
   }
 };
 
-// Salvar novo usuário no banco de dados
 export const saveNewUser = async (user) => {
   try {
     const users = await getAllUsers();
-
-    // Verificar se email já existe
     const emailExists = users.some((u) => u.email === user.email);
     if (emailExists) {
       return { success: false, message: "Email já cadastrado" };
     }
-
-    // Adicionar novo usuário
     users.push(user);
     await AsyncStorage.setItem(STORAGE_KEYS.USERS_DB, JSON.stringify(users));
 
@@ -71,7 +62,6 @@ export const saveNewUser = async (user) => {
   }
 };
 
-// Validar login
 export const validateLogin = async (email, password) => {
   try {
     const users = await getAllUsers();
@@ -80,7 +70,6 @@ export const validateLogin = async (email, password) => {
     );
 
     if (user) {
-      // Não retornar a senha
       const { password: _, ...userWithoutPassword } = user;
       return { success: true, user: userWithoutPassword };
     }
@@ -92,7 +81,6 @@ export const validateLogin = async (email, password) => {
   }
 };
 
-// Limpar todos os dados (útil para debug)
 export const clearAllData = async () => {
   try {
     await AsyncStorage.multiRemove([STORAGE_KEYS.USER, STORAGE_KEYS.USERS_DB]);

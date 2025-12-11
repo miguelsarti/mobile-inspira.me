@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -9,8 +9,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from 'expo-router'; // Para recarregar dados quando a tela é focada
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Importar AsyncStorage
+import { useFocusEffect, useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Header from "../components/header/header.js";
 import CategoryCarousel from "../components/CategoryCarousel";
 import API_URL from "../../utils/api";
@@ -18,24 +18,28 @@ import { useAuth } from "../../contexts/AuthContext";
 
 export default function ExploreScreen() {
   const { user } = useAuth();
+  const normalizedUserId = useMemo(() => {
+    if (typeof user?.id === "number") {
+      return user.id;
+    }
+    const parsed = Number(user?.id);
+    return Number.isNaN(parsed) ? null : parsed;
+  }, [user?.id]);
   const router = useRouter();
   const [categorias, setCategorias] = useState([]);
-  const [userPhrases, setUserPhrases] = useState([]); // Novo estado para frases do usuário
+  const [userPhrases, setUserPhrases] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [isLocalLoading, setIsLocalLoading] = useState(true); // Estado para carregamento local
+  const [isLocalLoading, setIsLocalLoading] = useState(true);
 
-  // --- Função para carregar frases da API ---
   useEffect(() => {
-    if (!user) return;
+    if (!normalizedUserId) return;
 
-    // Buscamos tanto as categorias quanto os posts para garantir que temos todos os dados
     Promise.all([
       fetch(`${API_URL}/categorias`).then(res => res.json()),
       fetch(`${API_URL}/posts`).then(res => res.json())
     ])
       .then(([categoriesData, postsData]) => {
-        // 1. Criar mapa de ID -> Nome da Categoria
         const catIdToName = {};
         if (Array.isArray(categoriesData)) {
           categoriesData.forEach(cat => {
@@ -43,14 +47,12 @@ export default function ExploreScreen() {
           });
         }
 
-        // 2. Agrupar posts por categoria
         const grouped = {};
 
         if (Array.isArray(postsData)) {
           postsData.forEach(post => {
             if (post.categories && Array.isArray(post.categories)) {
               post.categories.forEach(catRel => {
-                // Tenta pegar o nome do relacionamento ou do mapa
                 const catId = catRel.categoryId;
                 const catName = catRel.category?.description || catIdToName[catId];
 
@@ -59,16 +61,19 @@ export default function ExploreScreen() {
                     grouped[catName] = [];
                   }
 
-                  const isLiked = post.likes ? post.likes.some(l => l.userId === user.id) : false;
-
+                  const likesArray = Array.isArray(post.likes) ? post.likes : [];
+                  const userLike = likesArray.find(l => Number(l.userId) === normalizedUserId);
+                  const isLiked = Boolean(userLike);
                   const backgroundColor = post.backgroundColor || catRel.background || '#E4EEF8';
+                  const likeCount = likesArray.length > 0 ? likesArray.length : (post.numberLikes ?? 0);
 
                   grouped[catName].push({
                     id: post.id,
                     text: post.description,
                     backgroundColor,
-                    likesCount: post.numberLikes,
-                    isLiked: isLiked
+                    likesCount: likeCount,
+                    isLiked,
+                    likeId: userLike?.id ?? null,
                   });
                 }
               });
@@ -76,7 +81,6 @@ export default function ExploreScreen() {
           });
         }
 
-        // 3. Converter para o formato da lista
         const dadosAdaptados = Object.keys(grouped).map(key => ({
           titulo: key,
           items: grouped[key]
@@ -88,48 +92,48 @@ export default function ExploreScreen() {
         console.error("Erro ao buscar categorias da API:", error);
         setIsLoading(false);
       });
-  }, [user]);
+  }, [normalizedUserId]);
 
-  const handleLike = async (postId) => {
+  const handleLike = async (item) => {
+    if (!normalizedUserId) return;
+    const wasLiked = item.isLiked;
     try {
-      // Atualização Otimista
+      let newLikeId = item.likeId || null;
+      if (wasLiked && item.likeId) {
+        await fetch(`${API_URL}/registros-curtida/${item.likeId}`, {
+          method: 'DELETE',
+        });
+        newLikeId = null;
+      } else if (!wasLiked) {
+        const response = await fetch(`${API_URL}/registros-curtida`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ postId: item.id, userId: normalizedUserId }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Não foi possível registrar a curtida.');
+        }
+
+        const createdLike = await response.json();
+        newLikeId = createdLike.id;
+      }
+
       setCategorias(prevCats => prevCats.map(cat => ({
         ...cat,
-        items: cat.items.map(item => {
-          if (item.id === postId) {
-            const wasLiked = item.isLiked;
-            return {
-              ...item,
-              isLiked: !wasLiked,
-              likesCount: wasLiked ? item.likesCount - 1 : item.likesCount + 1
-            };
-          }
-          return item;
+        items: cat.items.map(card => {
+          if (card.id !== item.id) return card;
+          const delta = wasLiked ? -1 : 1;
+          return {
+            ...card,
+            isLiked: !wasLiked,
+            likesCount: Math.max(0, (card.likesCount || 0) + delta),
+            likeId: wasLiked ? null : newLikeId,
+          };
         })
       })));
-
-      // Chamada API (assumindo endpoint de toggle ou create/delete)
-      // Como não temos o endpoint exato, vamos tentar um POST para /likes/toggle ou similar
-      // Se não existir, o usuário terá que implementar.
-      // Mas baseando no seed, existe RegistroCurtida.
-      // Vamos tentar POST /likes com { postId, userId }
-
-      const response = await fetch(`${API_URL}/likes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          postId: postId,
-          userId: user.id
-        }),
-      });
-
-      if (!response.ok) {
-        // Reverter se falhar
-        console.error("Falha ao curtir");
-        // TODO: Reverter estado
-      }
     } catch (error) {
       console.error("Erro ao curtir:", error);
     }
@@ -148,7 +152,6 @@ export default function ExploreScreen() {
     }
   };
 
-  // Recarrega as frases do usuário sempre que a tela é focada (ex: voltando de CreatePhraseScreen)
   useFocusEffect(
     useCallback(() => {
       loadUserPhrases();
@@ -296,7 +299,7 @@ const styles = StyleSheet.create({
   },
 
   userCardText: {
-    color: '#333', // Talvez mude a cor para contraste em fundos coloridos
+    color: '#333',
     marginBottom: 5,
   },
   authorText: {

@@ -24,7 +24,7 @@ export default function CategoryCarousel({ title, items, onLike, onPress }) {
                         {/* Área de Curtidas */}
                         <TouchableOpacity
                             style={styles.likeContainer}
-                            onPress={() => onLike && onLike(item.id)}
+                            onPress={() => onLike && onLike(item)}
                         >
                             <Image
                                 source={require('../../assets/heart.png')}

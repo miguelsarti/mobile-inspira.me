@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -22,6 +22,13 @@ export default function PostDetalhes() {
   const { id } = useLocalSearchParams();
   const { user } = useAuth();
   const router = useRouter();
+  const normalizedUserId = useMemo(() => {
+    if (typeof user?.id === "number") {
+      return user.id;
+    }
+    const parsed = Number(user?.id);
+    return Number.isNaN(parsed) ? null : parsed;
+  }, [user?.id]);
 
   const [post, setPost] = useState(null);
   const [categoriesData, setCategoriesData] = useState([]);
@@ -32,14 +39,21 @@ export default function PostDetalhes() {
     fetch(`${API_URL}/posts/${id}`)
       .then((res) => res.json())
       .then((json) => {
+        const likesArray = Array.isArray(json?.likes) ? json.likes : [];
+        const userLike = normalizedUserId != null
+          ? likesArray.find((like) => Number(like.userId) === normalizedUserId)
+          : null;
         const normalizedPost = {
           ...json,
-          isLiked: json?.likes ? json.likes.some((like) => like.userId === user?.id) : false,
+          likes: likesArray,
+          numberLikes: likesArray.length > 0 ? likesArray.length : (json?.numberLikes ?? 0),
+          isLiked: Boolean(userLike),
+          userLikeId: userLike?.id ?? null,
         };
         setPost(normalizedPost);
       })
       .catch((err) => console.log(err));
-  }, [id, user?.id]);
+  }, [id, normalizedUserId]);
 
   useEffect(() => {
     fetch(`${API_URL}/categorias`)
@@ -52,25 +66,44 @@ export default function PostDetalhes() {
   }, []);
 
   const handleLike = async () => {
-    if (!post || !user) return;
-
-    setPost((prev) => {
-      if (!prev) return prev;
-      const wasLiked = prev.isLiked;
-      const currentLikes = prev.numberLikes || 0;
-      return {
-        ...prev,
-        isLiked: !wasLiked,
-        numberLikes: wasLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1,
-      };
-    });
+    if (!post || normalizedUserId == null) return;
 
     try {
-      await fetch(`${API_URL}/likes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postId: post.id, userId: user.id }),
-      });
+      if (post.isLiked && post.userLikeId) {
+        await fetch(`${API_URL}/registros-curtida/${post.userLikeId}`, {
+          method: 'DELETE',
+        });
+        setPost((prev) => {
+          if (!prev) return prev;
+          const currentLikes = prev.numberLikes || 0;
+          return {
+            ...prev,
+            isLiked: false,
+            userLikeId: null,
+            numberLikes: Math.max(0, currentLikes - 1),
+          };
+        });
+      } else {
+        const response = await fetch(`${API_URL}/registros-curtida`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postId: post.id, userId: normalizedUserId }),
+        });
+        if (!response.ok) {
+          throw new Error('Não foi possível registrar a curtida.');
+        }
+        const createdLike = await response.json();
+        setPost((prev) => {
+          if (!prev) return prev;
+          const currentLikes = prev.numberLikes || 0;
+          return {
+            ...prev,
+            isLiked: true,
+            userLikeId: createdLike.id,
+            numberLikes: currentLikes + 1,
+          };
+        });
+      }
     } catch (error) {
       console.error("Erro ao curtir:", error);
     }
@@ -108,14 +141,17 @@ export default function PostDetalhes() {
   const DEFAULT_ACTIVE_TAB = "Explorar";
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.screen}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.avatarCircle}>
             <Image
-              source={{
-                uri: user?.photoURL || "https://via.placeholder.com/40",
-              }}
+              source={user?.avatarUrl ? { uri: user.avatarUrl } : require("../../assets/profile.png")}
               style={styles.avatar}
             />
           </View>
@@ -177,6 +213,7 @@ export default function PostDetalhes() {
           </ScrollView>
         </View>
       ) : null}
+      </ScrollView>
 
       <View style={styles.tabsContainer}>
         {TAB_DESTINATIONS.map((tab) => {
@@ -197,18 +234,23 @@ export default function PostDetalhes() {
           );
         })}
       </View>
-
-      <View style={{ height: 60 }} />
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
     paddingTop: Platform.OS === "android" ? 50 : 60,
+  },
+  scrollContent: {
+    paddingBottom: 140,
   },
 
   loadingContainer: {
@@ -375,8 +417,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
-    paddingVertical: 10,
-    marginTop: 30,
+    paddingVertical: 12,
+    paddingBottom: Platform.OS === "ios" ? 24 : 16,
   },
   tabButton: {
     flex: 1,

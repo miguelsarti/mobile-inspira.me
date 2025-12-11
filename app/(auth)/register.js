@@ -98,8 +98,8 @@ export default function RegisterScreen() {
       >
         <View style={styles.content}>
           <View style={styles.profilePictureContainer}>
-            <Image
-              source={require('../../assets/profile.png')} // Atualizar o caminho para a imagem
+                <Image
+                  source={require("../../assets/profile.png")}
               style={styles.profilePicture}
             />
             <Text style={styles.profilePictureText}>Adicionar foto de perfil</Text>
@@ -204,7 +204,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff", // Fundo branco
+    backgroundColor: "#fff",
   },
   scrollContent: {
     flexGrow: 1,
@@ -222,14 +222,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   profilePicture: {
-    width: 150, // Largura da imagem
-    height: 150, // Altura da imagem
-    borderRadius: 100, // Para fazer a imagem redonda
-    backgroundColor: "#D9D9D9", // Cor de fundo padrão
+    width: 150,
+    height: 150,
+    borderRadius: 100,
+    backgroundColor: "#D9D9D9",
     marginBottom: 5,
   },
   profilePictureText: {
-    color: "#656565", // Cor do texto
+    color: "#656565",
     fontSize: 16,
     textAlign: "center",
   },
@@ -247,17 +247,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   input: {
-    backgroundColor: "#D9D9D9", // Fundo das caixas de texto
+    backgroundColor: "#D9D9D9",
     borderRadius: 8,
     padding: 15,
     marginBottom: 15,
     fontSize: 16,
     borderWidth: 1,
     borderColor: "#ddd",
-    color: "#656565", // Cor do texto
+    color: "#656565",
   },
   button: {
-    backgroundColor: "#769FCD", // Fundo do botão
+    backgroundColor: "#769FCD",
     borderRadius: 8,
     padding: 15,
     alignItems: "center",
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff", // Cor do texto do botão
+    color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -280,11 +280,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loginText: {
-    color: "#656565", // Cor do texto do link
+    color: "#656565",
     fontSize: 14,
   },
   loginLink: {
-    color: "#024C91", // Cor do link para login
+    color: "#024C91",
     fontSize: 14,
     fontWeight: "bold",
   },

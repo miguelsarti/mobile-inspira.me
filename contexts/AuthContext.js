@@ -16,22 +16,18 @@ export const AuthProvider = ({ children }) => {
   const router = useRouter();
   const segments = useSegments();
 
-  // Carregar usuário do AsyncStorage ao iniciar
   useEffect(() => {
     loadUser();
   }, []);
 
-  // Proteger rotas baseado em autenticação
   useEffect(() => {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === "(auth)";
 
     if (!user && !inAuthGroup) {
-      // Redirecionar para login se não estiver autenticado
       router.replace("/(auth)/login");
     } else if (user && inAuthGroup) {
-      // Redirecionar para home se já estiver autenticado
       router.replace("/(tabs)/home");
     }
   }, [user, segments, isLoading]);
@@ -49,7 +45,6 @@ export const AuthProvider = ({ children }) => {
 
   const signIn = async (userData) => {
     try {
-      // Se recebermos um objeto, assumimos que é o usuário já autenticado pelo backend
       if (typeof userData === 'object' && userData !== null) {
         setUser(userData);
         await saveUser(userData);
@@ -69,14 +64,13 @@ export const AuthProvider = ({ children }) => {
         id: Date.now().toString(),
         name,
         email,
-        password, // Em produção, use hash!
+        password,
         createdAt: new Date().toISOString(),
       };
 
       const result = await saveNewUser(newUser);
 
       if (result.success) {
-        // Fazer login automático após cadastro
         const { password: _, ...userWithoutPassword } = newUser;
         setUser(userWithoutPassword);
         await saveUser(userWithoutPassword);

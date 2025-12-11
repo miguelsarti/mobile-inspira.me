@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import { Link } from "expo-router";
@@ -74,7 +75,12 @@ export default function LoginScreen() {
     >
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          {/* Placeholder for logo */}
+          <View style={styles.logoCircle}>
+            <Image
+              source={require("../../assets/logo.png")}
+              style={styles.logo}
+            />
+          </View>
         </View>
         <Text style={styles.title}>Bem-vindo!</Text>
         <Text style={styles.subtitle}>Faça login para continuar</Text>
@@ -140,10 +146,31 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   logoContainer: {
-    height: 60,
+    height: 420,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
+  },
+  logoCircle: {
+    width: 400,
+    height: 400,
+    borderRadius: 200,
+    borderWidth: 3,
+    borderColor: "#ADD8E6",
+    backgroundColor: "#F0F8FF",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  logo: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   title: {
     fontSize: 32,
@@ -159,17 +186,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   input: {
-    backgroundColor: "#D9D9D9", // Fundo das caixas de texto
+    backgroundColor: "#D9D9D9",
     borderRadius: 8,
     padding: 15,
     marginBottom: 15,
     fontSize: 16,
     borderWidth: 1,
     borderColor: "#ddd",
-    color: "#000", // Cor do texto
+    color: "#000",
   },
   button: {
-    backgroundColor: "#769FCD", // Fundo do botão
+    backgroundColor: "#769FCD",
     borderRadius: 8,
     padding: 15,
     alignItems: "center",
@@ -181,7 +208,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff", // Cor do texto do botão
+    color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -192,11 +219,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   registerText: {
-    color: "#666", // Cor do texto do registro
+    color: "#666",
     fontSize: 14,
   },
   registerLink: {
-    color: "#024C91", // Cor do link para cadastro
+    color: "#024C91",
     fontSize: 14,
     fontWeight: "bold",
   },

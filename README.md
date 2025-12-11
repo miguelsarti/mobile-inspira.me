@@ -11,7 +11,7 @@ npm i
 ## Como rodar
 - Front-end:
 ```bash
-npm run dev
+npx expo start
 ```
 
 - Back-end: abra o projeto do back-end e rode:

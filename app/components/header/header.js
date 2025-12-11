@@ -10,7 +10,7 @@ export default function HomeScreen() {
       <View style={styles.headerLeft}>
         <View style={styles.userAvatar}>
           <Image
-            source={{ uri: user?.photoURL || "https://via.placeholder.com/40" }}
+            source={user?.avatarUrl ? { uri: user.avatarUrl } : require("../../../assets/profile.png")}
             style={styles.avatarImage}
           />
         </View>
